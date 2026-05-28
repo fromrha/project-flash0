@@ -184,11 +184,14 @@ export default function Page() {
         victim_name: victimName || "ANONIM",
         victim_age: String(victimAge),
         victim_photo: photoUrl || "null",
-        incident_location: lastSeenLocation
+        incident_location: lastSeenLocation,
+        latitude_tkp: String(geoLat),
+        longitude_tkp: String(geoLong),
+        radius_km: String(radius / 1000)
       }
     };
     setCompiledPayload(payload);
-  }, [victimName, victimAge, victimClothing, lastSeenLocation, photoUrl, targetDeviceToken]);
+  }, [victimName, victimAge, victimClothing, lastSeenLocation, photoUrl, targetDeviceToken, geoLat, geoLong, radius]);
 
   // Dispatch FCM Emergency Alert
   const handleDispatch = async () => {

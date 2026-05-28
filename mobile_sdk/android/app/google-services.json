@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838411848091",
+    "project_id": "mockuplens",
+    "storage_bucket": "mockuplens.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838411848091:android:9d2c8b549ccae81c98f93e",
+        "android_client_info": {
+          "package_name": "com.lapang.emergency.sdk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEpfEJgdn3FjbybqivvBRtDoJCCxvF7_g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

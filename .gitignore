@@ -1,8 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+**/node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -11,14 +12,18 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage/
+**/coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+**/.next/
+out/
+**/out/
 
 # production
-/build
+build/
+**/build/
 
 # misc
 .DS_Store
@@ -30,12 +35,24 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+**/.env*
 
 # vercel
 .vercel
+**/.vercel/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Flutter / Android IDEs and Gradle cache
+.gradle/
+**/.gradle/
+.dart_tool/
+**/.dart_tool/
+.idea/
+**/.idea/
+build/
+**/build/

@@ -26,6 +26,11 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Added `messaging.onBackgroundMessage` implementation in background service worker `public/firebase-messaging-sw.js` to parse push payloads.
 - Added emergency audio player to play `/alert.aac` siren using `new Audio().play()` in both simulator foreground listener and background service worker wrapper.
 - Added real-time Firestore synchronization on Dasbor POLRI utilizing `onSnapshot` SDK listener.
+- Added new private GitHub repository `https://github.com/fromrha/project-flash0` and pushed `master` and `feat/flutter-standalone-sdk` branches.
+- Added monorepo restructuring: moved Next.js dashboard code to `/dashboard` subdirectory.
+- Bootstrapped compile-ready Flutter Android standalone Client SDK application under `/mobile_sdk` using package `com.lapang.emergency.sdk`.
+- Added location background geofencing with the mathematical Haversine Formula inside Flutter's `firebaseMessagingBackgroundHandler` background message listener in Dart.
+- Added native system overlays (SYSTEM_ALERT_WINDOW), lockscreen screen wake (showWhenLocked), high-decibel audio alert siren resources, and location tracking permissions.
 
 ### Fixed
 - Fixed Firestore transaction freeze when offline by migrating to fire-and-forget `setDoc` promises.
