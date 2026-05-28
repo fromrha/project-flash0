@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary-trust: #052698;
+  --color-electric-alert: #116BF8;
+  --color-cyan-beacon: #21BCEE;
+  --color-tactical-dark: #02040a;
+  --color-tactical-black: #000000;
+  --color-tactical-gray: #878EA0;
+  --color-tactical-slate: #1e293b;
+  --color-tactical-light-slate: #334155;
+  --color-tactical-accent: #2e1065;
+  --color-tactical-emerald: #10b981;
+  --color-tactical-rose: #f43f5e;
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-scan: scan 6s linear infinite;
+  --animate-alert-blink: alert-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes alert-blink {
+  0%, 100% { opacity: 1; border-color: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); }
+  50% { opacity: 0.6; border-color: #052698; box-shadow: 0 0 2px rgba(5, 38, 152, 0.1); }
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #02040a;
+  --foreground: #f8fafc;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Glassmorphism Card Style */
+.tactical-glass {
+  background: rgba(10, 14, 26, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(30, 41, 59, 0.7);
+}
+
+.tactical-glass-highlight {
+  background: rgba(17, 107, 248, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(33, 188, 238, 0.3);
+  box-shadow: 0 0 25px rgba(17, 107, 248, 0.15);
+}
+
+.tactical-glow-blue {
+  box-shadow: 0 0 30px rgba(17, 107, 248, 0.25);
+}
+
+.tactical-glow-cyan {
+  box-shadow: 0 0 35px rgba(33, 188, 238, 0.3);
+}
+
+/* Military Grid Pattern Overlay */
+.tactical-grid-bg {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(30, 41, 59, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.15) 1px, transparent 1px);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #02040a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #116BF8;
 }
