@@ -33,6 +33,8 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Added native system overlays (SYSTEM_ALERT_WINDOW), lockscreen screen wake (showWhenLocked), high-decibel audio alert siren resources, and location tracking permissions.
 
 ### Fixed
+- Fixed compileSdk, minSdk, and targetSdk Gradle compiler compatibility crash under AGP 4.1.3 by updating them to compileSdkVersion, minSdkVersion, and targetSdkVersion in `/mobile_sdk/android/app/build.gradle`.
+- Updated buildscript ext.kotlin_version to '1.8.20' in `/mobile_sdk/android/build.gradle` for stability and Java 8 JVM compatibility.
 - Fixed Firestore transaction freeze when offline by migrating to fire-and-forget `setDoc` promises.
 - Fixed infinite polling loop on `/api/device-token` by increasing and synchronizing client/simulator intervals (4000ms on simulator, 6000ms on dashboard).
 - Fixed `TypeError` on empty backend API token requests by adding fallback object validation (defaulting blank fields to "ANONIM" or "TIDAK DIKETAHUI").
