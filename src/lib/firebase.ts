@@ -375,19 +375,19 @@ class HybridDatabase {
     }
   }
 
-  // --- FCM DEVICE TOKEN REGISTRY ---
+  // --- FCM DEVICE TOKEN REGISTRY (API BYPASS) ---
   public async registerSimulatorToken(token: string): Promise<void> {
     if (typeof window === "undefined") return;
     
-    // Mode: Real Firestore Active
-    if (hasRealCredentials && realDb) {
-      try {
-        const docRef = doc(realDb, "devices", "simulator_target");
-        await setDoc(docRef, { fcm_token: token, updated_at: new Date().toISOString() });
-        console.log("[FIREBASE] Simulator token registered in Firestore");
-      } catch (err) {
-        console.error("[FIREBASE] Failed to register token in Firestore:", err);
-      }
+    try {
+      await fetch("/api/device-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      console.log("[LAPANG] Simulator token registered via API Bridge");
+    } catch (err) {
+      console.error("[LAPANG] Failed to register token via API:", err);
     }
     
     // Always store in localStorage as well for local/fallback use
@@ -397,17 +397,18 @@ class HybridDatabase {
   public async getSimulatorToken(): Promise<string | null> {
     if (typeof window === "undefined") return null;
 
-    if (hasRealCredentials && realDb) {
-      try {
-        const docRef = doc(realDb, "devices", "simulator_target");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          return docSnap.data().fcm_token;
+    try {
+      const res = await fetch("/api/device-token");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token && data.token !== "lp_token_siap_siar") {
+          return data.token;
         }
-      } catch (err) {
-        console.warn("[FIREBASE] Failed to fetch token from Firestore, falling back to local:", err);
       }
+    } catch (err) {
+      console.warn("[LAPANG] API fetch failed, falling back to local:", err);
     }
+    
     return localStorage.getItem("lapang_sim_fcm_token");
   }
 }

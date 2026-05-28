@@ -57,6 +57,7 @@ export default function Page() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [targetDeviceToken, setTargetDeviceToken] = useState<string>("lp_token_siap_siar");
   const [broadcastError, setBroadcastError] = useState<string | null>(null);
+  const [isDispatching, setIsDispatching] = useState(false);
 
   // Poll for actual device token from simulator
   useEffect(() => {
@@ -187,12 +188,13 @@ export default function Page() {
 
   // Dispatch FCM Emergency Alert
   const handleDispatch = async () => {
-    if (isTriggerLocked) {
-      triggerToast("GALAT: Buka sistem pengaman utama terlebih dahulu!");
+    if (isTriggerLocked || isDispatching) {
+      if (isTriggerLocked) triggerToast("GALAT: Buka sistem pengaman utama terlebih dahulu!");
       return;
     }
 
     setBroadcastError(null);
+    setIsDispatching(true);
 
     // Validate if the token is a real FCM token
     if (!targetDeviceToken || targetDeviceToken === "lp_token_siap_siar" || targetDeviceToken.startsWith("fcm_mock")) {
@@ -233,9 +235,22 @@ export default function Page() {
       setPhotoUrl("");
       setNarrativeInput("");
       setAiParsedSuccess(false);
+
+      // Post the alert to the API so the simulator can pick it up
+      try {
+        await fetch("/api/device-token", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alert: result })
+        });
+      } catch (err) {
+        console.error("Failed to push alert to API bridge:", err);
+      }
     } catch (e) {
       console.error(e);
       triggerToast("Gagal menyimpan kasus baru.");
+    } finally {
+      setIsDispatching(false);
     }
   };
 
@@ -645,14 +660,21 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={handleDispatch}
-                  disabled={isTriggerLocked}
+                  disabled={isTriggerLocked || isDispatching}
                   className={`flex-1 py-3 text-xs font-mono font-bold uppercase tracking-widest rounded border transition-all ${
-                    isTriggerLocked
+                    isTriggerLocked || isDispatching
                       ? "bg-tactical-slate text-slate-600 border-tactical-slate cursor-not-allowed"
                       : "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white border-rose-500 hover:shadow-lg hover:shadow-rose-500/20 cursor-pointer animate-pulse"
                   }`}
                 >
-                  SIARKAN PERINGATAN DARURAT HIGHEST PRIORITY FCM
+                  {isDispatching ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      MENGIRIM SIARAN...
+                    </span>
+                  ) : (
+                    "SIARKAN PERINGATAN DARURAT HIGHEST PRIORITY FCM"
+                  )}
                 </button>
               </div>
               

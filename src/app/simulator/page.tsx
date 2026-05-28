@@ -62,6 +62,31 @@ export default function SimulatorPage() {
     }
   }, []);
 
+  // Poll for new alerts from the Next.js API Bridge
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    let lastAlertId: string | null = null;
+    
+    const pollAlerts = async () => {
+      try {
+        const res = await fetch("/api/device-token");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.alert && data.alert.internal_case_id !== lastAlertId) {
+            lastAlertId = data.alert.internal_case_id;
+            window.dispatchEvent(new CustomEvent("lapang-fcm-received", { detail: data.alert }));
+          }
+        }
+      } catch (err) {
+        // Silent fail on polling error
+      }
+    };
+    
+    const interval = setInterval(pollAlerts, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   const addDeviceLog = (msg: string) => {
     const time = new Date().toLocaleTimeString();
     setDeviceLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 10));
