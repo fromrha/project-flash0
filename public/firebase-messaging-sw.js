@@ -33,9 +33,15 @@ messaging.onBackgroundMessage((payload) => {
       ? `KORBAN: ${data.victim_name} (${data.victim_age}th) terakhir terlihat di ${data.incident_location || "TIDAK DIKETAHUI"}.`
       : "Pemberitahuan darurat penculikan anak terdekat.",
     icon: "/favicon.ico",
+    badge: "/favicon.ico",
     tag: data.token || "lapang_alert",
     requireInteraction: true,
-    sound: "/alert.aac"
+    sound: "/alert.aac",
+    vibrate: [500, 100, 500, 100, 500],
+    actions: [
+      { action: "view", title: "LIHAT DETAIL KASUS" }
+    ],
+    renotify: true
   };
 
   // Safe constructor check to comply with literal background instruction

@@ -82,8 +82,14 @@ export default function SimulatorPage() {
                 registration.showNotification("SIAGA 1: Penculikan Anak!", {
                   body: alertData.ai_summary,
                   icon: "/favicon.ico",
+                  badge: "/favicon.ico",
                   tag: alertData.internal_case_id,
-                  requireInteraction: true
+                  requireInteraction: true,
+                  vibrate: [500, 100, 500, 100, 500],
+                  actions: [
+                    { action: "view", title: "LIHAT DETAIL KASUS" }
+                  ],
+                  renotify: true
                 });
               })
               .catch(() => {
@@ -452,12 +458,25 @@ export default function SimulatorPage() {
                   className="w-full flex-1 bg-zinc-900 border border-zinc-700 rounded p-3 text-xs text-slate-200 placeholder:text-zinc-500 resize-none outline-none focus:border-cyan-beacon"
                 />
                 <button
-                  onClick={() => {
-                    alert("Laporan berhasil dikirim ke server POLRI!");
+                  onClick={async () => {
+                    if (simulatedAlert && reportText.trim()) {
+                      const reporterLat = simulatedAlert.incident_info.geo_coordinates.latitude + (Math.random() - 0.5) * 0.01;
+                      const reporterLong = simulatedAlert.incident_info.geo_coordinates.longitude + (Math.random() - 0.5) * 0.01;
+                      
+                      if (isOnline) {
+                        db.stashReport(simulatedAlert.secure_token_id, { latitude: reporterLat, longitude: reporterLong }, reportText);
+                        await db.flushOfflineQueue();
+                        addDeviceLog("SUKSES: Laporan saksi mata berhasil dikirim ke server POLRI!");
+                        alert("Laporan berhasil dikirim ke server POLRI!");
+                      } else {
+                        db.stashReport(simulatedAlert.secure_token_id, { latitude: reporterLat, longitude: reporterLong }, reportText);
+                        addDeviceLog("OFFLINE: Laporan saksi mata diamankan di antrean SDK.");
+                        alert("Koneksi buruk. Laporan Anda telah diamankan di antrean lokal SDK.");
+                      }
+                    }
                     setShowReportModal(false);
                     setSimulatedIncomingAlert(false);
                     setReportText("");
-                    addDeviceLog("Laporan saksi berhasil dikirim ke server POLRI.");
                   }}
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs cursor-pointer"
                 >
