@@ -202,10 +202,12 @@ class HybridDatabase {
     if (hasRealCredentials && realDb) {
       try {
         const docRef = doc(realDb, "alerts", internal_case_id);
-        await setDoc(docRef, newAlert);
-        console.log(`[FIREBASE] Case written to Google Firestore: ${internal_case_id}`);
+        // Do not await to prevent infinite hang when offline
+        setDoc(docRef, newAlert)
+          .then(() => console.log(`[FIREBASE] Case written to Google Firestore: ${internal_case_id}`))
+          .catch(err => console.error("[FIREBASE] Async Firestore insert failed:", err));
       } catch (err) {
-        console.error("[FIREBASE] Firestore insert failed, writing to local storage cache:", err);
+        console.error("[FIREBASE] Firestore insert initialization failed:", err);
       }
     }
 

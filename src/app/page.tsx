@@ -239,11 +239,11 @@ export default function Page() {
 
       // Post the alert to the API so the simulator can pick it up
       try {
-        await fetch("/api/device-token", {
+        fetch("/api/device-token", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ alert: result })
-        });
+        }).catch(err => console.error("Failed to push alert to API bridge:", err));
       } catch (err) {
         console.error("Failed to push alert to API bridge:", err);
       }
