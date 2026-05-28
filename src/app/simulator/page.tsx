@@ -90,7 +90,7 @@ export default function SimulatorPage() {
                     { action: "view", title: "LIHAT DETAIL KASUS" }
                   ],
                   renotify: true
-                });
+                } as any);
               })
               .catch(() => {
                 try {
