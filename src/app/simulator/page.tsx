@@ -63,12 +63,40 @@ export default function SimulatorPage() {
 
         // Try trigger native notification
         if (Notification.permission === "granted") {
-          new Notification("SIAGA 1: Penculikan Anak!", {
-            body: alertData.ai_summary,
-            icon: "/favicon.ico",
-            tag: alertData.internal_case_id,
-            requireInteraction: true
-          });
+          if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+            navigator.serviceWorker.ready
+              .then((registration) => {
+                registration.showNotification("SIAGA 1: Penculikan Anak!", {
+                  body: alertData.ai_summary,
+                  icon: "/favicon.ico",
+                  tag: alertData.internal_case_id,
+                  requireInteraction: true
+                });
+              })
+              .catch(() => {
+                try {
+                  new Notification("SIAGA 1: Penculikan Anak!", {
+                    body: alertData.ai_summary,
+                    icon: "/favicon.ico",
+                    tag: alertData.internal_case_id,
+                    requireInteraction: true
+                  });
+                } catch (err) {
+                  console.warn("Failed to construct Notification fallback:", err);
+                }
+              });
+          } else {
+            try {
+              new Notification("SIAGA 1: Penculikan Anak!", {
+                body: alertData.ai_summary,
+                icon: "/favicon.ico",
+                tag: alertData.internal_case_id,
+                requireInteraction: true
+              });
+            } catch (err) {
+              console.warn("Failed to construct Notification:", err);
+            }
+          }
         }
       };
 

@@ -33,4 +33,5 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Fixed `TypeError` on empty backend API token requests by adding fallback object validation (defaulting blank fields to "ANONIM" or "TIDAK DIKETAHUI").
 - Fixed manual command dashboard re-fetching cycles by replacing them with real-time reactive event subscription updates.
 - Fixed API dispatch security by executing rigorous model validators in the API PUT bridge before target message registration.
+- Fixed `Illegal constructor` error on mobile browsers by wrapping and routing foreground notification dispatch via `navigator.serviceWorker.ready` with custom browser fallbacks.
 
