@@ -27,6 +27,9 @@ export default function SimulatorPage() {
   const [simulatedAlert, setSimulatedAlert] = useState<any>(null);
   const [deviceLogs, setDeviceLogs] = useState<string[]>([]);
   const [simulatedIncomingAlert, setSimulatedIncomingAlert] = useState<boolean>(false);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [showReportModal, setShowReportModal] = useState<boolean>(false);
+  const [reportText, setReportText] = useState("");
 
   // Check initial permission
   useEffect(() => {
@@ -197,8 +200,17 @@ export default function SimulatorPage() {
         {/* Mobile Screen Header */}
         <div className="flex justify-between items-center text-[10px] font-mono text-tactical-gray mt-2 px-3 border-b border-tactical-slate/30 pb-2">
           <span>LAPANG MOBILE MOCK</span>
-          <div className="flex items-center gap-1.5">
-            <Wifi className="h-3 w-3 text-emerald-400" />
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                setIsOnline(!isOnline);
+                addDeviceLog(`Status Jaringan diubah ke: ${!isOnline ? 'ONLINE' : 'OFFLINE'}`);
+              }}
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer ${isOnline ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}
+            >
+              {isOnline ? <Wifi className="h-3 w-3 text-emerald-400" /> : <Wifi className="h-3 w-3 text-rose-400 opacity-50" />}
+              <span className={`text-[8px] font-bold ${isOnline ? "text-emerald-400" : "text-rose-400"}`}>{isOnline ? 'ON' : 'OFF'}</span>
+            </button>
             <Smartphone className="h-3 w-3 text-cyan-beacon" />
             <span>12:00</span>
           </div>
@@ -330,24 +342,73 @@ export default function SimulatorPage() {
               <div className="w-full max-w-sm flex gap-4 mb-8">
                 <button
                   onClick={() => {
-                    setSimulatedIncomingAlert(false);
-                    addDeviceLog("Alert ditolak (Protokol Lapor manual dipicu).");
+                    if (!isOnline) {
+                      const offlineQueue = JSON.parse(localStorage.getItem("lapang_sdk_offline_queue") || "[]");
+                      offlineQueue.push({
+                        internal_case_id: simulatedAlert.internal_case_id,
+                        gps: "JKT-LAT:-6.2088,LON:106.8456",
+                        report: "Aksi lapor petunjuk dipicu saat offline",
+                        timestamp: new Date().toISOString()
+                      });
+                      localStorage.setItem("lapang_sdk_offline_queue", JSON.stringify(offlineQueue));
+                      alert("Koneksi buruk. Laporan Anda telah diamankan di antrean lokal SDK dan akan otomatis diteruskan ke server POLRI saat sinyal pulih.");
+                      setSimulatedIncomingAlert(false);
+                      addDeviceLog("Koneksi buruk. Laporan masuk antrean lokal SDK.");
+                    } else {
+                      setShowReportModal(true);
+                    }
                   }}
                   className="flex-1 py-3.5 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-slate-300 rounded-xl text-xs font-bold uppercase cursor-pointer transition-all flex items-center justify-center gap-1.5"
                 >
                   <AlertTriangle className="h-4 w-4" />
-                  <span>Tutup</span>
+                  <span>LAPOR PETUNJUK</span>
                 </button>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`DITEMUKAN ALERT LAPANG: ${simulatedAlert.ai_summary}`);
+                    const secureLink = `https://lapang.polri.go.id/report/${simulatedAlert.secure_token_id}`;
+                    navigator.clipboard.writeText(`DITEMUKAN ALERT LAPANG: ${simulatedAlert.ai_summary}\nLapor di: ${secureLink}`);
                     setSimulatedIncomingAlert(false);
-                    addDeviceLog("SUKSES: Teks alert berhasil disalin ke clipboard!");
+                    addDeviceLog("SUKSES: Teks & link disalin ke clipboard!");
                   }}
                   className="flex-1 py-3.5 bg-electric-alert border border-electric-alert hover:bg-electric-alert/80 text-white rounded-xl text-xs font-bold uppercase cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-electric-alert/30"
                 >
                   <Copy className="h-4 w-4" />
                   <span>SIMPAN & SALIN</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* REPORT WEBVIEW MODAL */}
+          {showReportModal && (
+            <div className="absolute inset-0 bg-zinc-950 z-[60] flex flex-col animate-fade-in font-mono">
+              <div className="flex items-center gap-3 p-3 border-b border-tactical-slate/30 bg-tactical-black">
+                <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div className="text-xs font-bold text-slate-200">FORM PENGADUAN SAKSI</div>
+              </div>
+              <div className="p-4 flex-1 flex flex-col gap-4">
+                <div className="bg-rose-950/20 border border-rose-500/20 p-2 rounded text-[10px] text-rose-400 break-all">
+                  KASUS: {simulatedAlert?.secure_token_id}
+                </div>
+                <textarea 
+                  value={reportText}
+                  onChange={(e) => setReportText(e.target.value)}
+                  placeholder="Deskripsikan petunjuk yang Anda lihat..."
+                  className="w-full flex-1 bg-zinc-900 border border-zinc-700 rounded p-3 text-xs text-slate-200 placeholder:text-zinc-500 resize-none outline-none focus:border-cyan-beacon"
+                />
+                <button
+                  onClick={() => {
+                    alert("Laporan berhasil dikirim ke server POLRI!");
+                    setShowReportModal(false);
+                    setSimulatedIncomingAlert(false);
+                    setReportText("");
+                    addDeviceLog("Laporan saksi berhasil dikirim ke server POLRI.");
+                  }}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-xs cursor-pointer"
+                >
+                  KIRIM LAPORAN ONLINE
                 </button>
               </div>
             </div>

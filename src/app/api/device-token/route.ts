@@ -12,7 +12,12 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     if (body.alert) {
-      latestAlert = body.alert;
+      latestAlert = { ...body.alert };
+      if (!latestAlert.victim_info) latestAlert.victim_info = {};
+      if (!latestAlert.victim_info.name) latestAlert.victim_info.name = "ANONIM";
+      if (!latestAlert.incident_info) latestAlert.incident_info = {};
+      if (!latestAlert.incident_info.last_seen_location) latestAlert.incident_info.last_seen_location = "TIDAK DIKETAHUI";
+      
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ success: false, error: "No alert provided" }, { status: 400 });
