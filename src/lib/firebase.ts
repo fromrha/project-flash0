@@ -61,7 +61,8 @@ import {
   Firestore,
   setDoc,
   deleteDoc,
-  getDoc
+  getDoc,
+  onSnapshot
 } from "firebase/firestore";
 import { getMessaging, Messaging } from "firebase/messaging";
 
@@ -133,6 +134,51 @@ class HybridDatabase {
     if (status) {
       this.flushOfflineQueue();
     }
+  }
+
+  public onAlertsSnapshot(callback: (alerts: CaseAlert[]) => void): () => void {
+    if (typeof window === "undefined") return () => {};
+
+    // Mode: Real Firestore Active
+    if (hasRealCredentials && realDb) {
+      try {
+        const q = query(collection(realDb, "alerts"), orderBy("timestamps.created_at", "desc"));
+        const unsub = onSnapshot(q, (snapshot) => {
+          const list: CaseAlert[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push(docSnap.data() as CaseAlert);
+          });
+          // Cache in local storage backup
+          localStorage.setItem(this.alertsKey, JSON.stringify(list));
+          callback(list);
+        }, (err) => {
+          console.warn("[FIREBASE] Firestore onSnapshot failed, falling back to local:", err);
+        });
+        return unsub;
+      } catch (err) {
+        console.error("[FIREBASE] Firestore onSnapshot initialization failed:", err);
+      }
+    }
+
+    // Mode: Local Cache Fallback
+    const handleUpdate = () => {
+      const data = localStorage.getItem(this.alertsKey);
+      const list = data ? JSON.parse(data) : [];
+      callback(list);
+    };
+
+    window.addEventListener("lapang-alerts-updated", handleUpdate);
+    window.addEventListener("lapang-purge", handleUpdate);
+    window.addEventListener("lapang-queue-flushed", handleUpdate);
+
+    // Trigger immediately
+    handleUpdate();
+
+    return () => {
+      window.removeEventListener("lapang-alerts-updated", handleUpdate);
+      window.removeEventListener("lapang-purge", handleUpdate);
+      window.removeEventListener("lapang-queue-flushed", handleUpdate);
+    };
   }
 
   // --- CRUD OPERATIONS FOR ALERTS ---
@@ -215,6 +261,7 @@ class HybridDatabase {
     const alerts = await this.getAlerts();
     alerts.unshift(newAlert);
     localStorage.setItem(this.alertsKey, JSON.stringify(alerts));
+    window.dispatchEvent(new Event("lapang-alerts-updated"));
 
     // Dispatch FCM payload
     this.dispatchMockFCMNotification(newAlert);
@@ -297,6 +344,7 @@ class HybridDatabase {
         navigator.clipboard.writeText("").catch(() => {});
       }
       window.dispatchEvent(new CustomEvent("lapang-purge", { detail: { caseId } }));
+      window.dispatchEvent(new Event("lapang-alerts-updated"));
     }
   }
 
@@ -356,6 +404,7 @@ class HybridDatabase {
     localStorage.setItem(this.alertsKey, JSON.stringify(alerts));
     localStorage.setItem(this.queueKey, JSON.stringify([])); // Empty queue
     window.dispatchEvent(new Event("lapang-queue-flushed"));
+    window.dispatchEvent(new Event("lapang-alerts-updated"));
   }
 
   // --- FCM NOTIFICATION ENGINE (Real Dispatch Preview) ---

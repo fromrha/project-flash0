@@ -77,16 +77,21 @@ export default function Page() {
   // Initialize data on mount
   useEffect(() => {
     setIsOnline(db.isOnline());
-    loadDatabaseState();
+    setOfflineQueue(db.getOfflineQueue());
+
+    // Subscribe to real-time alerts snapshot
+    const unsubAlerts = db.onAlertsSnapshot((list) => {
+      setAlerts(list);
+    });
     
     // Listen for custom mock events
     const handlePurge = () => {
-      loadDatabaseState();
+      setOfflineQueue(db.getOfflineQueue());
       triggerToast("KRITIKAL: Pembersihan data zero-cache selesai disinkronkan.");
     };
 
     const handleQueueFlush = () => {
-      loadDatabaseState();
+      setOfflineQueue(db.getOfflineQueue());
       triggerToast("ONLINE: Laporan warga stashed telah berhasil disinkronkan.");
     };
 
@@ -94,14 +99,13 @@ export default function Page() {
     window.addEventListener("lapang-queue-flushed", handleQueueFlush);
     
     return () => {
+      unsubAlerts();
       window.removeEventListener("lapang-purge", handlePurge);
       window.removeEventListener("lapang-queue-flushed", handleQueueFlush);
     };
   }, []);
 
   const loadDatabaseState = async () => {
-    const list = await db.getAlerts();
-    setAlerts(list);
     setOfflineQueue(db.getOfflineQueue());
   };
 
@@ -223,7 +227,6 @@ export default function Page() {
         ai_summary: `SIAGA: ${victimName || "ANONIM"} (${victimAge > 0 ? `${victimAge}th` : "Anak"}), diculik dekat ${lastSeenLocation || "Lokasi diselidiki"}!`
       });
 
-      loadDatabaseState();
       setIsTriggerLocked(true); // Re-lock safety switch
       triggerToast("SIARAN DARURAT FCM PRIORITY HIGH BERHASIL DILEPAS!");
       

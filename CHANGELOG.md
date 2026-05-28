@@ -23,9 +23,14 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Added network status toggle button in the simulator header to simulate online/offline device states.
 - Added "SIMPAN & SALIN" overlay button to copy case summaries and encrypted reporting links.
 - Added "LAPOR PETUNJUK" reporting modal with local offline queuing (`lapang_sdk_offline_queue` local storage cache) for low-connectivity environments.
+- Added `messaging.onBackgroundMessage` implementation in background service worker `public/firebase-messaging-sw.js` to parse push payloads.
+- Added emergency audio player to play `/alert.aac` siren using `new Audio().play()` in both simulator foreground listener and background service worker wrapper.
+- Added real-time Firestore synchronization on Dasbor POLRI utilizing `onSnapshot` SDK listener.
 
 ### Fixed
 - Fixed Firestore transaction freeze when offline by migrating to fire-and-forget `setDoc` promises.
 - Fixed infinite polling loop on `/api/device-token` by increasing and synchronizing client/simulator intervals (4000ms on simulator, 6000ms on dashboard).
 - Fixed `TypeError` on empty backend API token requests by adding fallback object validation (defaulting blank fields to "ANONIM" or "TIDAK DIKETAHUI").
+- Fixed manual command dashboard re-fetching cycles by replacing them with real-time reactive event subscription updates.
+- Fixed API dispatch security by executing rigorous model validators in the API PUT bridge before target message registration.
 

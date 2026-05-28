@@ -49,6 +49,18 @@ export default function SimulatorPage() {
         setSimulatedIncomingAlert(true);
         addDeviceLog(`[ALERT RECEIVER] FCM High-Priority Diterima: ${alertData.victim_info.name}`);
         
+        // Play emergency siren sound
+        try {
+          new Audio('/alert.aac').play()
+            .then(() => addDeviceLog("TELEMETRI AUDIO: Sirine darurat diputar!"))
+            .catch(err => {
+              console.warn("Audio play blocked by browser autoplay policy:", err);
+              addDeviceLog("TELEMETRI AUDIO: Sirine diblokir oleh kebijakan browser.");
+            });
+        } catch (audioErr) {
+          console.error("Audio playback error:", audioErr);
+        }
+
         // Try trigger native notification
         if (Notification.permission === "granted") {
           new Notification("SIAGA 1: Penculikan Anak!", {

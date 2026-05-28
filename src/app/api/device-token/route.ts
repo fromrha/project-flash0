@@ -12,13 +12,35 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     if (body.alert) {
-      latestAlert = { ...body.alert };
-      if (!latestAlert.victim_info) latestAlert.victim_info = {};
-      if (!latestAlert.victim_info.name) latestAlert.victim_info.name = "ANONIM";
-      if (!latestAlert.incident_info) latestAlert.incident_info = {};
-      if (!latestAlert.incident_info.last_seen_location) latestAlert.incident_info.last_seen_location = "TIDAK DIKETAHUI";
-      
-      return NextResponse.json({ success: true });
+      const alert = { ...body.alert };
+      if (!alert.victim_info) alert.victim_info = {};
+      if (typeof alert.victim_info.name !== "string" || !alert.victim_info.name.trim()) {
+        alert.victim_info.name = "ANONIM";
+      }
+      if (typeof alert.victim_info.age !== "number" || isNaN(alert.victim_info.age) || alert.victim_info.age < 0) {
+        alert.victim_info.age = 0;
+      }
+      if (typeof alert.victim_info.last_clothing !== "string" || !alert.victim_info.last_clothing.trim()) {
+        alert.victim_info.last_clothing = "Pakaian tidak didetailkan";
+      }
+
+      if (!alert.incident_info) alert.incident_info = {};
+      if (typeof alert.incident_info.last_seen_location !== "string" || !alert.incident_info.last_seen_location.trim()) {
+        alert.incident_info.last_seen_location = "TIDAK DIKETAHUI";
+      }
+      if (!alert.incident_info.geo_coordinates) {
+        alert.incident_info.geo_coordinates = { latitude: -6.2088, longitude: 106.8456 };
+      }
+      if (typeof alert.incident_info.suspect_description !== "string" || !alert.incident_info.suspect_description.trim()) {
+        alert.incident_info.suspect_description = "Mencari petunjuk kendaraan...";
+      }
+
+      if (typeof alert.ai_summary !== "string" || !alert.ai_summary.trim()) {
+        alert.ai_summary = `SIAGA: ${alert.victim_info.name} (${alert.victim_info.age > 0 ? `${alert.victim_info.age}th` : "Anak"}), diculik dekat ${alert.incident_info.last_seen_location}!`;
+      }
+
+      latestAlert = alert;
+      return NextResponse.json({ success: true, alert: latestAlert });
     }
     return NextResponse.json({ success: false, error: "No alert provided" }, { status: 400 });
   } catch (err) {

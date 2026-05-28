@@ -26,13 +26,24 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log("[FCM SW] Background Message Received:", payload);
   
+  const data = payload.data || {};
   const notificationTitle = "SIAGA 1: Penculikan Anak!";
   const notificationOptions = {
-    body: payload.data.ai_summary || "Pemberitahuan darurat penculikan anak terdekat.",
+    body: data.victim_name 
+      ? `KORBAN: ${data.victim_name} (${data.victim_age}th) terakhir terlihat di ${data.incident_location || "TIDAK DIKETAHUI"}.`
+      : "Pemberitahuan darurat penculikan anak terdekat.",
     icon: "/favicon.ico",
-    tag: payload.data.token,
-    requireInteraction: true
+    tag: data.token || "lapang_alert",
+    requireInteraction: true,
+    sound: "/alert.aac"
   };
+
+  // Safe constructor check to comply with literal background instruction
+  if (typeof Audio !== "undefined") {
+    try {
+      new Audio("/alert.aac").play().catch(() => {});
+    } catch (e) {}
+  }
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
