@@ -20,3 +20,12 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Fully localized the POLRI Command Dashboard interface (`page.tsx`) into Indonesian formal, tactical language.
 - Built a mobile-optimized public citizen device simulator page at `/simulator` (`src/app/simulator/page.tsx`) using Notification permissions and VAPID FCM registration.
 - Added `public/firebase-messaging-sw.js` service worker background listener to stabilize client FCM token fetches.
+- Added network status toggle button in the simulator header to simulate online/offline device states.
+- Added "SIMPAN & SALIN" overlay button to copy case summaries and encrypted reporting links.
+- Added "LAPOR PETUNJUK" reporting modal with local offline queuing (`lapang_sdk_offline_queue` local storage cache) for low-connectivity environments.
+
+### Fixed
+- Fixed Firestore transaction freeze when offline by migrating to fire-and-forget `setDoc` promises.
+- Fixed infinite polling loop on `/api/device-token` by increasing and synchronizing client/simulator intervals (4000ms on simulator, 6000ms on dashboard).
+- Fixed `TypeError` on empty backend API token requests by adding fallback object validation (defaulting blank fields to "ANONIM" or "TIDAK DIKETAHUI").
+
