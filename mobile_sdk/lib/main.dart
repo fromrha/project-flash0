@@ -11,6 +11,14 @@ void main() async {
   // 1. Inisialisasi Google Firebase Core SDK
   await Firebase.initializeApp();
 
+  // Daftarkan perangkat secara otomatis ke FCM Topic khusus siaga_anak_hilang
+  try {
+    await FirebaseMessaging.instance.subscribeToTopic('siaga_anak_hilang');
+    print("[LAPANG Background SDK] Terdaftar ke FCM Topic: siaga_anak_hilang");
+  } catch (topicErr) {
+    print("[WARN] Gagal subscribe ke FCM Topic: $topicErr");
+  }
+
   // 2. Registrasi background messaging handler top-level VM entrypoint
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 

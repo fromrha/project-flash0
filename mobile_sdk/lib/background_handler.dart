@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -133,8 +134,4 @@ Future<void> triggerEmergencyBroadcaster(RemoteMessage message) async {
     notificationDetails,
     payload: data['token'],
   );
-}
-// Stub list to pass compilation
-class Int64List {
-  static List<int> fromList(List<int> list) => list;
 }
