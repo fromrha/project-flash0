@@ -83,7 +83,7 @@ export default function SimulatorPage() {
       }
     };
     
-    const interval = setInterval(pollAlerts, 2000);
+    const interval = setInterval(pollAlerts, 4000);
     return () => clearInterval(interval);
   }, []);
 

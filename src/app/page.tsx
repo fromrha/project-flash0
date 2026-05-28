@@ -66,7 +66,7 @@ export default function Page() {
       if (token) setTargetDeviceToken(token);
     };
     fetchToken();
-    const interval = setInterval(fetchToken, 3000);
+    const interval = setInterval(fetchToken, 6000);
     return () => clearInterval(interval);
   }, []);
   
@@ -199,6 +199,7 @@ export default function Page() {
     // Validate if the token is a real FCM token
     if (!targetDeviceToken || targetDeviceToken === "lp_token_siap_siar" || targetDeviceToken.startsWith("fcm_mock")) {
       setBroadcastError("Gagal mengirim: Token tidak valid atau perangkat belum terdaftar di Firebase (menggunakan Mock Token).");
+      setIsDispatching(false);
       return;
     }
 
