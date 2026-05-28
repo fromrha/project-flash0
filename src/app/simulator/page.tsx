@@ -33,8 +33,21 @@ export default function SimulatorPage() {
 
   // Check initial permission
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPermission(Notification.permission);
+    if (typeof window !== "undefined") {
+      if ("Notification" in window) {
+        setPermission(Notification.permission);
+      }
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/firebase-messaging-sw.js")
+          .then((reg) => {
+            addDeviceLog("LAPANG SDK: Service Worker terdaftar.");
+            console.log("Service Worker registered successfully:", reg);
+          })
+          .catch((err) => {
+            addDeviceLog("WARN: Gagal mendaftarkan Service Worker.");
+            console.error("Service Worker registration failed:", err);
+          });
+      }
     }
     addDeviceLog("Sistem Operasi Seluler: Inisialisasi...");
     addDeviceLog("LAPANG SDK: FlashZeroService aktif di latar belakang.");
