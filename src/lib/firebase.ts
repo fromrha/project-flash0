@@ -60,7 +60,8 @@ import {
   orderBy,
   Firestore,
   setDoc,
-  deleteDoc
+  deleteDoc,
+  getDoc
 } from "firebase/firestore";
 import { getMessaging, Messaging } from "firebase/messaging";
 
@@ -372,6 +373,42 @@ class HybridDatabase {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("lapang-fcm-received", { detail: alert }));
     }
+  }
+
+  // --- FCM DEVICE TOKEN REGISTRY ---
+  public async registerSimulatorToken(token: string): Promise<void> {
+    if (typeof window === "undefined") return;
+    
+    // Mode: Real Firestore Active
+    if (hasRealCredentials && realDb) {
+      try {
+        const docRef = doc(realDb, "devices", "simulator_target");
+        await setDoc(docRef, { fcm_token: token, updated_at: new Date().toISOString() });
+        console.log("[FIREBASE] Simulator token registered in Firestore");
+      } catch (err) {
+        console.error("[FIREBASE] Failed to register token in Firestore:", err);
+      }
+    }
+    
+    // Always store in localStorage as well for local/fallback use
+    localStorage.setItem("lapang_sim_fcm_token", token);
+  }
+
+  public async getSimulatorToken(): Promise<string | null> {
+    if (typeof window === "undefined") return null;
+
+    if (hasRealCredentials && realDb) {
+      try {
+        const docRef = doc(realDb, "devices", "simulator_target");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          return docSnap.data().fcm_token;
+        }
+      } catch (err) {
+        console.warn("[FIREBASE] Failed to fetch token from Firestore, falling back to local:", err);
+      }
+    }
+    return localStorage.getItem("lapang_sim_fcm_token");
   }
 }
 

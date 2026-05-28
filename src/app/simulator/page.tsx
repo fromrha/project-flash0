@@ -17,7 +17,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
-import { messaging } from "@/lib/firebase";
+import { messaging, db } from "@/lib/firebase";
 
 export default function SimulatorPage() {
   const [permission, setPermission] = useState<string>("default");
@@ -73,6 +73,11 @@ export default function SimulatorPage() {
       return;
     }
 
+    if (!window.isSecureContext) {
+      addDeviceLog("ERROR: Sistem membutuhkan Secure Context (HTTPS).");
+      return;
+    }
+
     setIsRegistering(true);
     addDeviceLog("Mengajukan izin Notifikasi OS...");
 
@@ -97,11 +102,13 @@ export default function SimulatorPage() {
             if (token) {
               setFcmToken(token);
               addDeviceLog("SUKSES: Token FCM asli berhasil didapatkan.");
+              db.registerSimulatorToken(token);
             } else {
               throw new Error("No token returned");
             }
           } catch (tokenErr: any) {
-            console.warn("FCM getToken failed, generating secure simulated device token:", tokenErr);
+            console.error("[LAPANG SDK] FCM getToken failed! Check if firebase-messaging-sw.js is properly registered and accessible:", tokenErr);
+            addDeviceLog("ERROR: Gagal registrasi FCM. Cek konsol browser.");
             generateSimulatedToken();
           }
         } else {
@@ -128,6 +135,7 @@ export default function SimulatorPage() {
     }
     setFcmToken(mockToken);
     addDeviceLog("SUKSES: Token Simulator diaktifkan (Siap untuk Dasbor utama).");
+    db.registerSimulatorToken(mockToken);
   };
 
   const copyTokenToClipboard = () => {

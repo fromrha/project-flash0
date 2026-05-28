@@ -55,6 +55,19 @@ export default function Page() {
   const [isTriggerLocked, setIsTriggerLocked] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [targetDeviceToken, setTargetDeviceToken] = useState<string>("lp_token_siap_siar");
+  const [broadcastError, setBroadcastError] = useState<string | null>(null);
+
+  // Poll for actual device token from simulator
+  useEffect(() => {
+    const fetchToken = async () => {
+      const token = await db.getSimulatorToken();
+      if (token) setTargetDeviceToken(token);
+    };
+    fetchToken();
+    const interval = setInterval(fetchToken, 3000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Offline report simulation
   const [simulatorNarrative, setSimulatorNarrative] = useState("");
@@ -162,7 +175,7 @@ export default function Page() {
         }
       },
       data: {
-        token: "lp_token_siap_siar",
+        token: targetDeviceToken,
         victim_name: victimName || "ANONIM",
         victim_age: String(victimAge),
         victim_photo: photoUrl || "null",
@@ -170,12 +183,20 @@ export default function Page() {
       }
     };
     setCompiledPayload(payload);
-  }, [victimName, victimAge, victimClothing, lastSeenLocation, photoUrl]);
+  }, [victimName, victimAge, victimClothing, lastSeenLocation, photoUrl, targetDeviceToken]);
 
   // Dispatch FCM Emergency Alert
   const handleDispatch = async () => {
     if (isTriggerLocked) {
       triggerToast("GALAT: Buka sistem pengaman utama terlebih dahulu!");
+      return;
+    }
+
+    setBroadcastError(null);
+
+    // Validate if the token is a real FCM token
+    if (!targetDeviceToken || targetDeviceToken === "lp_token_siap_siar" || targetDeviceToken.startsWith("fcm_mock")) {
+      setBroadcastError("Gagal mengirim: Token tidak valid atau perangkat belum terdaftar di Firebase (menggunakan Mock Token).");
       return;
     }
 
@@ -634,6 +655,12 @@ export default function Page() {
                   SIARKAN PERINGATAN DARURAT HIGHEST PRIORITY FCM
                 </button>
               </div>
+              
+              {broadcastError && (
+                <div className="mt-3 p-2 bg-rose-500/10 border border-rose-500/30 rounded text-rose-400 text-[10px] font-mono text-center font-bold">
+                  {broadcastError}
+                </div>
+              )}
             </div>
           </section>
 
