@@ -24,8 +24,10 @@ import {
   AlertTriangle,
   Clock,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Smartphone
 } from "lucide-react";
+import Link from "next/link";
 import { db, CaseAlert, StashedReport } from "@/lib/firebase";
 
 export default function Page() {
@@ -51,17 +53,12 @@ export default function Page() {
   const [aiParsedSuccess, setAiParsedSuccess] = useState(false);
   const [compiledPayload, setCompiledPayload] = useState<any>(null);
   const [isTriggerLocked, setIsTriggerLocked] = useState(true);
-  const [notificationDispatched, setNotificationDispatched] = useState<CaseAlert | null>(null);
-  const [activeTab, setActiveTab] = useState<"intake" | "map" | "logs">("intake");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   // Offline report simulation
   const [simulatorNarrative, setSimulatorNarrative] = useState("");
   const [selectedCaseToken, setSelectedCaseToken] = useState("");
-
-  // Refs for audio simulation
-  const alarmAudio = useRef<HTMLAudioElement | null>(null);
 
   // Initialize data on mount
   useEffect(() => {
@@ -71,12 +68,12 @@ export default function Page() {
     // Listen for custom mock events
     const handlePurge = () => {
       loadDatabaseState();
-      triggerToast("CRITICAL: Zero-cache wipe executed. Data purged from all devices.");
+      triggerToast("KRITIKAL: Pembersihan data zero-cache selesai disinkronkan.");
     };
 
     const handleQueueFlush = () => {
       loadDatabaseState();
-      triggerToast("ONLINE: Offline report queue synchronized with database.");
+      triggerToast("ONLINE: Laporan warga stashed telah berhasil disinkronkan.");
     };
 
     window.addEventListener("lapang-purge", handlePurge);
@@ -125,12 +122,12 @@ export default function Page() {
         setSuspectDescription(data.vehicle_description || "");
         
         setAiParsedSuccess(true);
-        triggerToast("AI Parse Completed! Intake fields populated.");
+        triggerToast("Ekstraksi AI Berhasil! Mengisi otomatis isian data.");
       } else {
-        triggerToast("Error calling Gemini parser. Using deterministic fallback.");
+        triggerToast("Galat parser Gemini. Menggunakan pencocokan lokal.");
       }
     } catch (e) {
-      triggerToast("Connection error during parsing. Fallback applied.");
+      triggerToast("Masalah jaringan. Mengaktifkan parser cadangan.");
     } finally {
       setIsAiParsing(false);
     }
@@ -157,7 +154,7 @@ export default function Page() {
           aps: {
             alert: {
               title: `SIAGA 1: Penculikan Anak!`,
-              body: `DINI HARI: ${victimName || "ANONIM"} (${victimAge > 0 ? `${victimAge}th` : "Umur tidak diketahui"}). Pakaian: ${victimClothing || "tidak didetailkan"}. Terakhir terlihat di ${lastSeenLocation || "Lokasi diselidiki"}.`
+              body: `DINI HARI: ${victimName || "ANONIM"} (${victimAge > 0 ? `${victimAge}th` : "Usia tidak diketahui"}). Pakaian: ${victimClothing || "tidak didetailkan"}. Terakhir terlihat di ${lastSeenLocation || "Lokasi diselidiki"}.`
             },
             sound: "critical_alarm.wav",
             "volume-override": 1.0
@@ -165,7 +162,7 @@ export default function Page() {
         }
       },
       data: {
-        token: "lp_pending_compilation",
+        token: "lp_token_siap_siar",
         victim_name: victimName || "ANONIM",
         victim_age: String(victimAge),
         victim_photo: photoUrl || "null",
@@ -178,7 +175,7 @@ export default function Page() {
   // Dispatch FCM Emergency Alert
   const handleDispatch = async () => {
     if (isTriggerLocked) {
-      triggerToast("ERROR: Unlock primary safety mechanism first!");
+      triggerToast("GALAT: Buka sistem pengaman utama terlebih dahulu!");
       return;
     }
 
@@ -192,7 +189,7 @@ export default function Page() {
           photo_url: photoUrl || null
         },
         incident_info: {
-          last_seen_location: lastSeenLocation || "Mencari lokasi...",
+          last_seen_location: lastSeenLocation || "Sedang diselidiki...",
           geo_coordinates: {
             latitude: geoLat,
             longitude: geoLong
@@ -202,10 +199,9 @@ export default function Page() {
         ai_summary: `SIAGA: ${victimName || "ANONIM"} (${victimAge > 0 ? `${victimAge}th` : "Anak"}), diculik dekat ${lastSeenLocation || "Lokasi diselidiki"}!`
       });
 
-      setNotificationDispatched(result);
       loadDatabaseState();
       setIsTriggerLocked(true); // Re-lock safety switch
-      triggerToast("FCM HIGHEST PRIORITY DISPATCHED SUCCESSFULLY!");
+      triggerToast("SIARAN DARURAT FCM PRIORITY HIGH BERHASIL DILEPAS!");
       
       // Reset form
       setVictimName("");
@@ -218,7 +214,7 @@ export default function Page() {
       setAiParsedSuccess(false);
     } catch (e) {
       console.error(e);
-      triggerToast("Failed to insert case alert.");
+      triggerToast("Gagal menyimpan kasus baru.");
     }
   };
 
@@ -227,17 +223,17 @@ export default function Page() {
     const newStatus = !isOnline;
     setIsOnline(newStatus);
     db.setOnline(newStatus);
-    triggerToast(newStatus ? "NETWORK ONLINE: Synchronization activated." : "NETWORK OFFLINE: Offline storage cache monitoring enabled.");
+    triggerToast(newStatus ? "JARINGAN AKTIF: Sinkronisasi diaktifkan." : "JARINGAN TERPUTUS: Caching antrean lokal offline berjalan.");
   };
 
   // Mock Citizen Report Submission
   const handleMockReportSubmission = () => {
     if (!selectedCaseToken) {
-      triggerToast("ERROR: Choose an active case target first!");
+      triggerToast("GALAT: Pilih target kasus siaga terlebih dahulu!");
       return;
     }
     if (!simulatorNarrative.trim()) {
-      triggerToast("ERROR: Narrate witness context!");
+      triggerToast("GALAT: Tulis detail informasi saksi mata!");
       return;
     }
 
@@ -245,15 +241,13 @@ export default function Page() {
     const reporterLong = geoLong + (Math.random() - 0.5) * 0.01;
 
     if (isOnline) {
-      // Direct post to database via simulation helper
       db.stashReport(selectedCaseToken, { latitude: reporterLat, longitude: reporterLong }, simulatorNarrative);
       db.flushOfflineQueue();
-      triggerToast("SUCCESS: Citizen report dispatched directly to police desk!");
+      triggerToast("SUKSES: Laporan saksi mata berhasil dikirim ke Pusat Komando POLRI!");
     } else {
-      // Network trap -> stash locally
       db.stashReport(selectedCaseToken, { latitude: reporterLat, longitude: reporterLong }, simulatorNarrative);
       setOfflineQueue(db.getOfflineQueue());
-      triggerToast("OFFLINE: Low signal. Stashed safely in client resilient queue!");
+      triggerToast("OFFLINE: Sinyal rendah. Disimpan di antrean aman perangkat warga!");
     }
 
     setSimulatorNarrative("");
@@ -261,7 +255,7 @@ export default function Page() {
 
   // Trigger absolute zero cryptographic purge
   const handlePurgeCase = async (id: string) => {
-    const confirm = window.confirm("WARNING: Excuting CRYPTOGRAPHIC PURGE wipes all public references, photo CDN links, and memory traces of this child across all local and remote nodes. Proceed?");
+    const confirm = window.confirm("PERINGATAN: Eksekusi PEMBERSIHAN KRIPTOGRAFIS menghapus total berkas, metadata, referensi CDN foto, dan memori pelacakan anak ini dari semua node lokal/firebase. Lanjutkan?");
     if (confirm) {
       await db.purgeCase(id);
     }
@@ -271,18 +265,17 @@ export default function Page() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedToken(text);
-    triggerToast(`COPIED: ${label}`);
+    triggerToast(`SALIN: ${label}`);
     setTimeout(() => setCopiedToken(null), 2000);
   };
 
   // Visual Coordinates Randomizer (Triangulation simulation)
   const simulateTriangulation = () => {
-    // Random offset around Jakarta center
     const newLat = -6.2088 + (Math.random() - 0.5) * 0.05;
     const newLng = 106.8456 + (Math.random() - 0.5) * 0.05;
     setGeoLat(Number(newLat.toFixed(6)));
     setGeoLong(Number(newLng.toFixed(6)));
-    triggerToast("COMPUTED: Live map geo-coordinates triangulated.");
+    triggerToast("TRIANGULASI: Koordinat penangkapan berhasil disesuaikan.");
   };
 
   return (
@@ -306,20 +299,27 @@ export default function Page() {
             <h1 className="text-xl font-bold tracking-wider font-mono flex items-center gap-2 text-slate-100">
               LAPANG <span className="text-xs bg-primary-trust/60 text-cyan-beacon border border-cyan-beacon/30 px-2 py-0.5 rounded font-sans uppercase">POLRI COMMAND CONSOLE</span>
             </h1>
-            <p className="text-xs text-tactical-gray font-mono">SYSTEM INTERFACE VERSION Pre-Beta v0.1.0 // SPARK DUAL CONFIGURATION</p>
+            <p className="text-xs text-tactical-gray font-mono">DOKET PUSAT PENYIARAN DARURAT // INTEGRASI NATIVE FIREBASE REAL</p>
           </div>
         </div>
 
         {/* STATUS PANEL */}
         <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+          
+          {/* Simulator link */}
+          <Link href="/simulator" className="flex items-center gap-2 bg-gradient-to-r from-primary-trust to-electric-alert hover:opacity-85 text-white px-3 py-1.5 rounded border border-cyan-beacon/45 cursor-pointer transition-all">
+            <Smartphone className="h-3.5 w-3.5" />
+            <span>BUKA SIMULATOR HP WARGA</span>
+          </Link>
+
           <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded border border-tactical-slate">
             <Radio className="text-emerald-500 h-3.5 w-3.5 animate-pulse" />
-            <span className="text-slate-400">FCM SERVER: <span className="text-emerald-400">ACTIVE</span></span>
+            <span className="text-slate-400">SERVER FCM: <span className="text-emerald-400">AKTIF</span></span>
           </div>
 
           <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded border border-tactical-slate">
             <Cpu className="text-cyan-beacon h-3.5 w-3.5" />
-            <span className="text-slate-400">APNs TUNNEL: <span className="text-cyan-beacon font-bold">SECURE (1.0 VOL)</span></span>
+            <span className="text-slate-400">APNs TUNNEL: <span className="text-cyan-beacon font-bold">AMAN (MOCK)</span></span>
           </div>
 
           {/* Network Simulator Controls */}
@@ -334,12 +334,12 @@ export default function Page() {
             {isOnline ? (
               <>
                 <Wifi className="h-3.5 w-3.5" />
-                <span>LINK STATUS: ONLINE</span>
+                <span>KONEKSI: ONLINE</span>
               </>
             ) : (
               <>
                 <WifiOff className="h-3.5 w-3.5 animate-pulse" />
-                <span>LINK STATUS: OFFLINE</span>
+                <span>KONEKSI: OFFLINE</span>
               </>
             )}
           </button>
@@ -352,27 +352,27 @@ export default function Page() {
         {/* COLUMN 1: POLRI EMERGENCY INTAKE & PARSER (xl:col-span-7) */}
         <div className="xl:col-span-7 flex flex-col gap-6">
           
-          {/* AI Narative Parser Block */}
+          {/* AI Narrative Parser Block */}
           <section className="tactical-glass p-5 rounded-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 h-[2px] w-full bg-gradient-to-r from-transparent via-cyan-beacon to-transparent opacity-60"></div>
             <div className="flex items-center justify-between mb-4 border-b border-tactical-slate pb-3">
               <h2 className="text-sm font-semibold tracking-wider font-mono text-cyan-beacon flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-cyan-beacon" /> 
-                [INTAKE SECTION 01] // GEMINI AI WITNESS LOG PARSER
+                [UNIT INPUT 01] // GEMINI AI WITNESS LOG PARSER (BAHASA)
               </h2>
               <span className="text-[10px] text-tactical-gray font-mono">MODEL: GEMINI-1.5-FLASH</span>
             </div>
             
-            <p className="text-xs text-slate-350 mb-3 leading-relaxed">
-              Paste messy, unstructured witness statements, bystander narrative logs, or chat messages. 
-              The AI Engine parses it instantly to auto-fill the child abduction docket.
+            <p className="text-xs text-slate-300 mb-3 leading-relaxed">
+              Tempel narasi saksi mata tak terstruktur atau teks laporan warga. 
+              Mesin kecerdasan buatan Gemini akan memecah log dan mengisi formulir pelaporan secara instan.
             </p>
 
             <div className="flex flex-col gap-3">
               <textarea
                 value={narrativeInput}
                 onChange={(e) => setNarrativeInput(e.target.value)}
-                placeholder="Example: Saya melihat seorang anak laki-laki bernama Alden umur kira-kira 6 tahun memakai baju kaos merah dan celana jeans biru diculik di dekat halte busway Bundaran HI. Penculiknya memakai mobil Avanza Hitam dengan plat B 1234 GZ..."
+                placeholder="Contoh: Saya lihat anak perempuan namanya Salsa umur kira-kira 5 tahun pakai baju putih jilbab merah diseret masuk mobil Avanza Hitam plat B 9876 XYZ di depan Halte Bundaran HI pukul 10 malam tadi..."
                 className="w-full h-24 bg-tactical-black border border-tactical-slate rounded p-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-beacon/50 transition-all font-mono leading-relaxed"
               />
               
@@ -388,12 +388,12 @@ export default function Page() {
                 {isAiParsing ? (
                   <>
                     <RefreshCw className="h-4 w-4 animate-spin text-white" />
-                    <span>PARSING VIA GOOGLE AI API LAYER...</span>
+                    <span>MENGANALISIS NARASI VIA GOOGLE GEMINI API...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4" />
-                    <span>RUN GEMINI NARRATIVE COMPLIANCE EXTRACTOR</span>
+                    <span>JALANKAN EKSTRAKSI NARASI LAPORAN WARGA</span>
                   </>
                 )}
               </button>
@@ -405,10 +405,10 @@ export default function Page() {
             <div className="flex items-center justify-between mb-4 border-b border-tactical-slate pb-3">
               <h2 className="text-sm font-semibold tracking-wider font-mono text-cyan-beacon flex items-center gap-2">
                 <Database className="h-4 w-4" />
-                [INTAKE SECTION 02] // CHILD ABDUCTION CASE INTAKE DOCKET
+                [BAGIAN INPUT DATA] // DOKET DARURAT PENCULIKAN ANAK (POLRI)
               </h2>
               <span className="text-[10px] text-rose-500 font-mono flex items-center gap-1 animate-pulse">
-                <AlertTriangle className="h-3 w-3" /> SIAGA 1 ACTIVE
+                <AlertTriangle className="h-3 w-3" /> STATUS SIAGA 1 AKTIF
               </span>
             </div>
 
@@ -416,7 +416,7 @@ export default function Page() {
               
               {/* Field: Name */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono tracking-wider text-slate-400">VICTIM NAME (NAMA LENGKAP / ANONIM)</label>
+                <label className="text-[10px] font-mono tracking-wider text-slate-400">NAMA KORBAN (LENGKAP ATAU ANONIM)</label>
                 <input
                   type="text"
                   value={victimName}
@@ -428,37 +428,37 @@ export default function Page() {
 
               {/* Field: Age */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono tracking-wider text-slate-400">ESTIMATED AGE (ESTIMASI USIA - TAHUN)</label>
+                <label className="text-[10px] font-mono tracking-wider text-slate-400">ESTIMASI USIA KORBAN (TAHUN)</label>
                 <input
                   type="number"
                   value={victimAge || ""}
                   onChange={(e) => setVictimAge(Number(e.target.value))}
-                  placeholder="Estimated Age"
+                  placeholder="Contoh: 6"
                   className="bg-tactical-black border border-tactical-slate rounded px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-beacon/50 transition-all font-mono"
                 />
               </div>
 
               {/* Field: Clothing */}
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-[10px] font-mono tracking-wider text-slate-400">LAST KNOWN CLOTHING (PAKAIAN TERAKHIR KORBAN)</label>
+                <label className="text-[10px] font-mono tracking-wider text-slate-400">PAKAIAN TERAKHIR KORBAN (WARNA DAN TIPE)</label>
                 <input
                   type="text"
                   value={victimClothing}
                   onChange={(e) => setVictimClothing(e.target.value)}
-                  placeholder="e.g. Kaos merah marun tulisan NIKE, celana jins biru sobek lutut"
+                  placeholder="Contoh: Kaos merah marun berlogo Nike, celana jeans biru robek lutut"
                   className="bg-tactical-black border border-tactical-slate rounded px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-beacon/50 transition-all font-mono"
                 />
               </div>
 
               {/* Field: Landmark location */}
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-[10px] font-mono tracking-wider text-slate-400">LAST SEEN LOCATION LANDMARK (HALTE / JALAN / GEDUNG)</label>
+                <label className="text-[10px] font-mono tracking-wider text-slate-400">LOKASI TERAKHIR TERLIHAT (LANDMARK / HALTE / STASIUN / JALAN)</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={lastSeenLocation}
                     onChange={(e) => setLastSeenLocation(e.target.value)}
-                    placeholder="e.g. Dekat halte busway Bundaran HI arah utara"
+                    placeholder="Contoh: Di dekat Halte Busway Bundaran HI arah Manggarai"
                     className="w-full bg-tactical-black border border-tactical-slate rounded pl-9 pr-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-beacon/50 transition-all font-mono"
                   />
                   <MapPin className="absolute left-3 top-2.5 h-3.5 w-3.5 text-tactical-gray" />
@@ -467,24 +467,24 @@ export default function Page() {
 
               {/* Field: Suspect Details */}
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-[10px] font-mono tracking-wider text-slate-400">SUSPECT VEHICLE & ABUDCTOR DESCRIPTION (DESKRIPSI KENDARAAN & PELAKU)</label>
+                <label className="text-[10px] font-mono tracking-wider text-slate-400">DESKRIPSI KENDARAAN & PELAKU (MEREK, WARNA, NOMOR PLAT)</label>
                 <input
                   type="text"
                   value={suspectDescription}
                   onChange={(e) => setSuspectDescription(e.target.value)}
-                  placeholder="e.g. Toyota Avanza Hitam B 1234 GZ, penyok samping kanan belakang"
+                  placeholder="Contoh: Toyota Avanza Hitam dengan Plat Nomor B 9876 XYZ, penyok bumper depan kanan"
                   className="bg-tactical-black border border-tactical-slate rounded px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-beacon/50 transition-all font-mono"
                 />
               </div>
 
               {/* Field: Optional Photo URL */}
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-[10px] font-mono tracking-wider text-slate-400">VICTIM PHOTO ASSETS REFERENCE URL (OPSIONAL)</label>
+                <label className="text-[10px] font-mono tracking-wider text-slate-400">TAUTAN FOTO KORBAN DARI KELUARGA (OPSIONAL)</label>
                 <input
                   type="text"
                   value={photoUrl}
                   onChange={(e) => setPhotoUrl(e.target.value)}
-                  placeholder="e.g. https://images.unsplash.com/photo-... (atau kosongkan untuk fallack teks)"
+                  placeholder="https://images.unsplash.com/... (kosongkan jika tidak ada foto)"
                   className="bg-tactical-black border border-tactical-slate rounded px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-beacon/50 transition-all font-mono"
                 />
               </div>
@@ -493,12 +493,12 @@ export default function Page() {
             {/* Sub-block: Geographical Triangulation Simulation */}
             <div className="mt-5 border-t border-tactical-slate pt-5">
               <h3 className="text-xs font-mono text-cyan-beacon mb-3 flex items-center gap-2">
-                <Compass className="h-4 w-4" /> [VECTOR MAP INTEGRATION] // LIVE TRIANGULATION
+                <Compass className="h-4 w-4" /> [TRIANGULASI KOORDINAT PETA] // INTEGRASI VEKTOR GPS
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-mono text-slate-400">ANCHOR LATITUDE</label>
+                  <label className="text-[9px] font-mono text-slate-400">TITIK KOORDINAT LATITUDE</label>
                   <input
                     type="number"
                     step="0.000001"
@@ -508,7 +508,7 @@ export default function Page() {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-mono text-slate-400">ANCHOR LONGITUDE</label>
+                  <label className="text-[9px] font-mono text-slate-400">TITIK KOORDINAT LONGITUDE</label>
                   <input
                     type="number"
                     step="0.000001"
@@ -523,7 +523,7 @@ export default function Page() {
                   className="bg-primary-trust/30 border border-cyan-beacon/40 text-cyan-beacon hover:bg-primary-trust/50 hover:text-white px-3 py-2 text-xs font-mono rounded cursor-pointer transition-all flex items-center justify-center gap-2"
                 >
                   <Compass className="h-4 w-4 animate-spin-slow" />
-                  <span>TRIANGULATE COORDINATES</span>
+                  <span>KUNCI VECTOR POSISI</span>
                 </button>
               </div>
 
@@ -539,12 +539,12 @@ export default function Page() {
                 <div className="absolute h-2 w-2 bg-rose-500 rounded-full shadow-lg shadow-rose-500/80"></div>
                 
                 <div className="absolute bottom-3 left-3 flex flex-col font-mono text-[9px] text-tactical-gray">
-                  <span>SWEEP MATRIX TARGET: JKT_METRO_T1</span>
+                  <span>VEKTOR SWEEP AREA: METRO_JAKARTA_PUSAT</span>
                   <span>CENTER LAT: {geoLat.toFixed(5)}, LONG: {geoLong.toFixed(5)}</span>
                 </div>
                 
                 <div className="absolute top-3 right-3 text-cyan-beacon font-mono text-[9px] border border-cyan-beacon/35 px-2 py-0.5 rounded uppercase">
-                  Radar Active (2000m)
+                  RADAR AKTIF ({radius}m)
                 </div>
               </div>
             </div>
@@ -560,14 +560,14 @@ export default function Page() {
             <div className="flex items-center justify-between mb-4 border-b border-tactical-slate pb-3">
               <h2 className="text-sm font-semibold tracking-wider font-mono text-cyan-beacon flex items-center gap-2">
                 <Zap className="h-4 w-4 text-rose-500 animate-pulse" />
-                [DISPATCH HUB] // FCM EMERGENCY BROADCAST PARAMETERS
+                [PUSAT PENYIARAN DARURAT] // KENDALI BROADCAST FCM
               </h2>
             </div>
 
             {/* Broadcast Area Geofence Settings */}
             <div className="flex flex-col gap-3 mb-5">
               <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-slate-400">BROADCAST GEORADIUS VECTOR:</span>
+                <span className="text-slate-400">RADIUS PENYIARAN GEOFENCE:</span>
                 <span className="text-cyan-beacon font-bold">{(radius / 1000).toFixed(1)} KM RADIUS</span>
               </div>
               <div className="flex gap-2">
@@ -590,7 +590,7 @@ export default function Page() {
 
             {/* Realtime Compiled Payload Preview */}
             <div className="flex flex-col gap-1.5 mb-5">
-              <span className="text-[10px] font-mono tracking-wider text-slate-400">REAL-TIME COMPILED JSON DISPATCH PAYLOAD:</span>
+              <span className="text-[10px] font-mono tracking-wider text-slate-400">PAYLOAD JSON FCM REAL-TIME KOMPILASI:</span>
               <pre className="bg-tactical-black text-[9px] font-mono text-emerald-400 p-3 rounded border border-tactical-slate h-36 overflow-y-auto leading-relaxed scrollbar-thin">
                 {JSON.stringify(compiledPayload, null, 2)}
               </pre>
@@ -600,10 +600,10 @@ export default function Page() {
             <div className="flex flex-col gap-3 bg-tactical-black/80 border border-rose-500/30 p-4 rounded">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="text-rose-400 font-bold flex items-center gap-1">
-                  <AlertTriangle className="h-4 w-4 animate-bounce" /> PRIMARY SAFETY SWITCH
+                  <AlertTriangle className="h-4 w-4 animate-bounce" /> SISTEM PENGAMAN UTAMA
                 </span>
                 <span className={isTriggerLocked ? "text-rose-500 font-bold" : "text-emerald-400 font-bold animate-pulse"}>
-                  {isTriggerLocked ? "LOCKED" : "READY FOR LAUNCH"}
+                  {isTriggerLocked ? "TERKUNCI" : "SIAP SIARAN"}
                 </span>
               </div>
 
@@ -618,7 +618,7 @@ export default function Page() {
                   }`}
                 >
                   {isTriggerLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4 text-emerald-400" />}
-                  <span>{isTriggerLocked ? "UNLOCK LAUNCH" : "LOCK SAFETY"}</span>
+                  <span>{isTriggerLocked ? "BUKA KUNCI" : "KUNCI PENGAMAN"}</span>
                 </button>
 
                 <button
@@ -631,7 +631,7 @@ export default function Page() {
                       : "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white border-rose-500 hover:shadow-lg hover:shadow-rose-500/20 cursor-pointer animate-pulse"
                   }`}
                 >
-                  DISPATCH EMERGENCY CRITICAL FCM BROADCAST
+                  SIARKAN PERINGATAN DARURAT HIGHEST PRIORITY FCM
                 </button>
               </div>
             </div>
@@ -642,15 +642,15 @@ export default function Page() {
             <div className="flex items-center justify-between mb-4 border-b border-tactical-slate pb-3">
               <h2 className="text-sm font-semibold tracking-wider font-mono text-cyan-beacon flex items-center gap-2">
                 <Activity className="h-4 w-4" />
-                [CASE MONITOR] // LIVE ABDUCTION SYSTEM REGISTRY
+                [PEMANTAU KASUS AKTIF] // REGISTRI DARURAT SEKTOR
               </h2>
-              <span className="text-[10px] bg-tactical-slate px-2 py-0.5 rounded font-mono text-slate-350">{alerts.length} CASES</span>
+              <span className="text-[10px] bg-tactical-slate px-2 py-0.5 rounded font-mono text-slate-350">{alerts.length} KASUS</span>
             </div>
 
             {alerts.length === 0 ? (
               <div className="h-32 bg-tactical-black/40 border border-dashed border-tactical-slate rounded flex flex-col items-center justify-center text-slate-600 gap-2">
                 <Clock className="h-6 w-6 text-slate-700" />
-                <span className="text-xs font-mono tracking-wider">No active cases registered. System secure.</span>
+                <span className="text-xs font-mono tracking-wider">Sistem Aman. Tidak ada kasus penculikan aktif.</span>
               </div>
             ) : (
               <div className="flex flex-col gap-4 max-h-[400px] overflow-y-auto pr-1">
@@ -670,7 +670,7 @@ export default function Page() {
                           <span className={`h-2 w-2 rounded-full ${alert.status === "HYBRID_ACTIVE" ? "bg-rose-500 animate-ping" : "bg-emerald-500"}`}></span>
                           {alert.victim_info.name} ({alert.victim_info.age}th)
                         </span>
-                        <span className="text-[9px] font-mono text-tactical-gray mt-0.5">CASE ID: {alert.internal_case_id}</span>
+                        <span className="text-[9px] font-mono text-tactical-gray mt-0.5">INTERNAL ID: {alert.internal_case_id}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -685,7 +685,7 @@ export default function Page() {
                         {alert.status === "HYBRID_ACTIVE" && (
                           <button
                             onClick={() => handlePurgeCase(alert.internal_case_id)}
-                            title="Execute Cryptographic Zero-Wipe Purge"
+                            title="Eksekusi Pembersihan Kriptografis Zero-Wipe"
                             className="p-1 rounded bg-rose-500/10 border border-rose-500/40 hover:bg-rose-500/20 text-rose-400 cursor-pointer transition-all"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -696,24 +696,24 @@ export default function Page() {
 
                     {/* Details content of card */}
                     <div className="text-xs font-mono space-y-1 text-slate-350 border-t border-tactical-slate/40 pt-2 mt-2">
-                      <div><span className="text-tactical-gray font-bold">TERAKHIR TERLIHAT:</span> {alert.incident_info.last_seen_location}</div>
-                      <div><span className="text-tactical-gray font-bold">PAKAIAN:</span> {alert.victim_info.last_clothing}</div>
+                      <div><span className="text-tactical-gray font-bold">LOKASI HILANG:</span> {alert.incident_info.last_seen_location}</div>
+                      <div><span className="text-tactical-gray font-bold">PAKAIAN TERAKHIR:</span> {alert.victim_info.last_clothing}</div>
                       {alert.incident_info.suspect_description && (
-                        <div className="whitespace-pre-wrap"><span className="text-tactical-gray font-bold">KENDARAAN / INFORMASI:</span> {alert.incident_info.suspect_description}</div>
+                        <div className="whitespace-pre-wrap"><span className="text-tactical-gray font-bold">INFO KENDARAAN / SAKSI:</span> {alert.incident_info.suspect_description}</div>
                       )}
                       
                       {/* Secure Token Link */}
                       <div className="mt-3 bg-tactical-black border border-tactical-slate p-2 rounded flex items-center justify-between gap-2">
                         <div className="flex flex-col overflow-hidden">
-                          <span className="text-[9px] text-tactical-gray uppercase">AEAD Secure Token URL (Public)</span>
+                          <span className="text-[9px] text-tactical-gray uppercase">Tautan Publik Pengaduan Saksi (AEAD Token)</span>
                           <span className="text-[10px] text-cyan-beacon truncate font-mono">
                             https://lapang.polri.go.id/report/{alert.secure_token_id}
                           </span>
                         </div>
                         <button
-                          onClick={() => copyToClipboard(`https://lapang.polri.go.id/report/${alert.secure_token_id}`, "Secure case link copied!")}
+                          onClick={() => copyToClipboard(`https://lapang.polri.go.id/report/${alert.secure_token_id}`, "Link Token Kasus disalin!")}
                           className="p-1.5 bg-tactical-slate/50 hover:bg-tactical-slate text-slate-400 hover:text-white rounded cursor-pointer transition-all"
-                          title="Copy secure link"
+                          title="Salin tautan kasus"
                         >
                           {copiedToken === `https://lapang.polri.go.id/report/${alert.secure_token_id}` ? (
                             <ClipboardCheck className="h-3.5 w-3.5 text-emerald-400" />
@@ -734,31 +734,31 @@ export default function Page() {
             <div className="flex items-center justify-between mb-4 border-b border-tactical-slate pb-3">
               <h2 className="text-sm font-semibold tracking-wider font-mono text-cyan-beacon flex items-center gap-2">
                 <Compass className="h-4 w-4" />
-                [EMULATOR SDK CO-INTEGRATION] // CITIZEN DISPATCH SIMULATOR
+                [SIMULASI INPUT LAPORAN WARGA] // CADANGAN OFFLINE SDK
               </h2>
             </div>
             
-            <p className="text-xs text-slate-350 mb-3 leading-relaxed">
-              Use this form to mock the native **Citizen Mobile SDK Viewport** running inside municipal applications (like JAKI). 
-              If the device Owner hits "Lapor" in low-signal corridors, the system caches reports locally and automatically synchronizes when cellular links recover.
+            <p className="text-xs text-slate-300 mb-3 leading-relaxed">
+              Mensimulasikan pengiriman laporan warga secara lokal dari SDK aplikasi JAKI. 
+              Saat koneksi diset **OFFLINE**, laporan akan masuk antrean cache lokal dan dilepas otomatis saat koneksi beralih **ONLINE**.
             </p>
 
             <div className="space-y-4 font-mono text-xs">
               
               {/* Select Case Target */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-400">SELECT INTENDED ACTIVE CASE TARGET:</label>
+                <label className="text-[10px] text-slate-400">PILIH TARGET KASUS SIAGA AKTIF:</label>
                 <select
                   value={selectedCaseToken}
                   onChange={(e) => setSelectedCaseToken(e.target.value)}
                   className="bg-tactical-black border border-tactical-slate rounded px-3 py-2 text-xs text-slate-200 focus:outline-none"
                 >
-                  <option value="">-- Select Active Case --</option>
+                  <option value="">-- Pilih Kasus Aktif --</option>
                   {alerts
                     .filter((a) => a.status === "HYBRID_ACTIVE")
                     .map((a) => (
                       <option key={a.secure_token_id} value={a.secure_token_id}>
-                        {a.victim_info.name} ({a.secure_token_id})
+                        {a.victim_info.name} ({a.secure_token_id.substring(0, 8)}...)
                       </option>
                     ))}
                 </select>
@@ -766,11 +766,11 @@ export default function Page() {
 
               {/* Witness report text */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-slate-400">ENTER WITNESS UPDATE REPORT Narrative:</label>
+                <label className="text-[10px] text-slate-400">TULIS DETAIL BUKTI / PEMANDANGAN SAKSI MATA:</label>
                 <textarea
                   value={simulatorNarrative}
                   onChange={(e) => setSimulatorNarrative(e.target.value)}
-                  placeholder="e.g. Melihat mobil Avanza tersebut berbelok ke arah Menteng di Jalan Imam Bonjol..."
+                  placeholder="Contoh: Saya lihat mobil Avanza Hitam dengan plat tersebut melaju kencang ke arah Jalan M.H. Thamrin di depan Menteng..."
                   className="bg-tactical-black border border-tactical-slate rounded p-2.5 h-16 text-xs text-slate-200 focus:outline-none"
                 />
               </div>
@@ -783,7 +783,7 @@ export default function Page() {
                   className="flex-1 bg-cyan-beacon/20 hover:bg-cyan-beacon/30 text-cyan-beacon border border-cyan-beacon/40 py-2 rounded font-bold cursor-pointer transition-all flex items-center justify-center gap-2"
                 >
                   <Compass className="h-4 w-4" />
-                  <span>SUBMIT CITIZEN WITNESS REPORT</span>
+                  <span>KIRIM LAPORAN SAKSI MATA WARGA</span>
                 </button>
               </div>
 
@@ -791,22 +791,22 @@ export default function Page() {
               <div className="mt-4 border-t border-tactical-slate/40 pt-4">
                 <div className="flex justify-between items-center text-[10px] text-slate-400 mb-2">
                   <span className="flex items-center gap-1 uppercase">
-                    <Database className="h-3.5 w-3.5 text-rose-400" /> Offline Resilient Stashed Reports Queue
+                    <Database className="h-3.5 w-3.5 text-rose-400" /> Antrean Lokal Laporan Offline (Stashed)
                   </span>
-                  <span className="font-bold text-rose-400">{offlineQueue.length} STASHED</span>
+                  <span className="font-bold text-rose-400">{offlineQueue.length} ANTRIAN</span>
                 </div>
 
                 {offlineQueue.length === 0 ? (
                   <div className="text-[9px] text-tactical-gray bg-tactical-black/40 border border-tactical-slate/30 p-2 rounded text-center">
-                    Offline queue clean. All reports successfully dispatched.
+                    Antrean bersih. Semua laporan warga telah berhasil disinkronkan ke server.
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {offlineQueue.map((rep) => (
                       <div key={rep.id} className="bg-tactical-black border border-rose-500/20 p-2 rounded text-[10px] flex justify-between items-start gap-3">
                         <div className="flex flex-col">
-                          <span className="font-bold text-rose-400">CASE TOKEN: {rep.case_token}</span>
-                          <span className="text-slate-350 mt-1">"{rep.narrative}"</span>
+                          <span className="font-bold text-rose-400">KASUS TOKEN: {rep.case_token}</span>
+                          <span className="text-slate-300 mt-1">"{rep.narrative}"</span>
                           <span className="text-tactical-gray text-[8px] mt-1">{rep.timestamp}</span>
                         </div>
                         <span className="text-[8px] border border-rose-500/40 text-rose-400 px-1.5 rounded uppercase">Stashed</span>
@@ -826,11 +826,11 @@ export default function Page() {
       {/* FOOTER METRICS LOG PANEL */}
       <footer className="mt-8 border-t border-tactical-slate pt-5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-mono text-tactical-gray">
         <div>
-          <span>LAPANG EMERGENCY CONTROL DESK // METROPOLITAN SECURITY DIVISION INTAKE</span>
+          <span>POLRI METROPOLITAN EMERGENCY ALERT COMMAND CENTER // JAKARTA KOTA</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5 text-cyan-beacon animate-pulse" /> ENGINE STATS: STABLE</span>
-          <span>SYSTEM TIME: {new Date().toLocaleTimeString()}</span>
+          <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5 text-cyan-beacon animate-pulse" /> TELEMETRI STATS: SEHAT</span>
+          <span>WAKTU UTAMA: {new Date().toLocaleTimeString()}</span>
         </div>
       </footer>
 

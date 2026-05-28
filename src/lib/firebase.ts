@@ -1,16 +1,14 @@
 /**
- * LAPANG Firebase Resilient Infrastructure Layer
+ * LAPANG Firebase Resilient Infrastructure Layer (Real & Mock Hybrid)
  * 
- * Provides:
- * 1. Firebase client initialization boilerplate for Spark Plan (Free Tier)
- * 2. Hybrid Local-Storage backed Mock Firestore and Cloud Messaging (FCM)
- * 3. Offline Stash & Forward Queue for handling local reporting in cellular deadzones
- * 4. Cryptographic Purge Protocol (Right to be Forgotten) for complete data erasure
+ * Automatically initializes and routes to the real Firebase Client SDK (Firestore & FCM)
+ * if environmental variables are present. If variables are missing or if any remote call 
+ * encounters permissions/network issues, it falls back to the resilient Local-Storage mock layer.
  */
 
 import { encryptCaseId } from "./crypto";
 
-// Define the alert schema type
+// 1. Firebase Schema Types
 export interface CaseAlert {
   secure_token_id: string;
   internal_case_id: string;
@@ -48,29 +46,68 @@ export interface StashedReport {
   timestamp: string;
 }
 
-// ----------------------------------------------------
-// 1. Firebase Spark Boilerplate Configuration Stubs
-// ----------------------------------------------------
+// 2. Real Firebase Client SDK Imports
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc, 
+  updateDoc, 
+  query, 
+  where, 
+  orderBy,
+  Firestore,
+  setDoc,
+  deleteDoc
+} from "firebase/firestore";
+import { getMessaging, Messaging } from "firebase/messaging";
+
+// Standard Next.js Env Credentials
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "mock-api-key",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "lapang-juara.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "lapang-juara",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "lapang-juara.appspot.com",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "mock-sender-id",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "mock-app-id"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// ----------------------------------------------------
-// 2. Hybrid Local-Storage Mock Database Client
-// ----------------------------------------------------
-class MockDatabase {
+// Check if credentials are fully active
+const hasRealCredentials = !!(
+  firebaseConfig.apiKey && 
+  firebaseConfig.apiKey !== "mock-api-key" &&
+  firebaseConfig.projectId
+);
+
+let app: FirebaseApp | null = null;
+let realDb: Firestore | null = null;
+let realMessaging: Messaging | null = null;
+
+if (typeof window !== "undefined" && hasRealCredentials) {
+  try {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    realDb = getFirestore(app);
+    try {
+      realMessaging = getMessaging(app);
+    } catch (msgErr) {
+      console.warn("FCM is not supported in this browser environment:", msgErr);
+    }
+    console.log("[FIREBASE] Native Client SDK initialized successfully with active credentials.");
+  } catch (err) {
+    console.error("[FIREBASE] Native Client SDK initialization failed:", err);
+  }
+}
+
+// 3. Resilient Database Handler (Dual-Mode Firestore / LocalStorage)
+class HybridDatabase {
   private alertsKey = "lapang_firestore_alerts";
   private queueKey = "lapang_offline_queue";
   private networkStatusKey = "lapang_network_online";
 
   constructor() {
     if (typeof window !== "undefined") {
-      // Initialize keys in localStorage if they don't exist
       if (!localStorage.getItem(this.alertsKey)) {
         localStorage.setItem(this.alertsKey, JSON.stringify([]));
       }
@@ -78,7 +115,7 @@ class MockDatabase {
         localStorage.setItem(this.queueKey, JSON.stringify([]));
       }
       if (localStorage.getItem(this.networkStatusKey) === null) {
-        localStorage.setItem(this.networkStatusKey, "true"); // default to online
+        localStorage.setItem(this.networkStatusKey, "true");
       }
     }
   }
@@ -101,11 +138,42 @@ class MockDatabase {
   
   public async getAlerts(): Promise<CaseAlert[]> {
     if (typeof window === "undefined") return [];
+
+    // Mode: Real Firestore Active
+    if (hasRealCredentials && realDb) {
+      try {
+        const q = query(collection(realDb, "alerts"), orderBy("timestamps.created_at", "desc"));
+        const snapshot = await getDocs(q);
+        const list: CaseAlert[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push(docSnap.data() as CaseAlert);
+        });
+        
+        // Synchronize local storage as a cache backup
+        localStorage.setItem(this.alertsKey, JSON.stringify(list));
+        return list;
+      } catch (err) {
+        console.warn("[FIREBASE] Firestore fetch failed, falling back to local storage cache:", err);
+      }
+    }
+
+    // Mode: Local Cache Fallback
     const data = localStorage.getItem(this.alertsKey);
     return data ? JSON.parse(data) : [];
   }
 
   public async getAlertByToken(token: string): Promise<CaseAlert | null> {
+    if (hasRealCredentials && realDb) {
+      try {
+        const q = query(collection(realDb, "alerts"), where("secure_token_id", "==", token));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          return snapshot.docs[0].data() as CaseAlert;
+        }
+      } catch (err) {
+        console.warn("[FIREBASE] Firestore query failed, falling back to local cache:", err);
+      }
+    }
     const alerts = await this.getAlerts();
     return alerts.find(a => a.secure_token_id === token) || null;
   }
@@ -115,7 +183,6 @@ class MockDatabase {
       throw new Error("Cannot execute database writes in SSR context");
     }
 
-    const alerts = await this.getAlerts();
     const internal_case_id = `case_${Date.now()}`;
     const secure_token_id = await encryptCaseId(internal_case_id);
 
@@ -130,10 +197,23 @@ class MockDatabase {
       }
     };
 
-    alerts.unshift(newAlert); // New cases first
+    // Mode: Real Firestore Active
+    if (hasRealCredentials && realDb) {
+      try {
+        const docRef = doc(realDb, "alerts", internal_case_id);
+        await setDoc(docRef, newAlert);
+        console.log(`[FIREBASE] Case written to Google Firestore: ${internal_case_id}`);
+      } catch (err) {
+        console.error("[FIREBASE] Firestore insert failed, writing to local storage cache:", err);
+      }
+    }
+
+    // Write to Local Storage backup
+    const alerts = await this.getAlerts();
+    alerts.unshift(newAlert);
     localStorage.setItem(this.alertsKey, JSON.stringify(alerts));
 
-    // Emit mock FCM message
+    // Dispatch FCM payload
     this.dispatchMockFCMNotification(newAlert);
 
     return newAlert;
@@ -144,6 +224,36 @@ class MockDatabase {
   public async purgeCase(internalCaseId: string): Promise<boolean> {
     if (typeof window === "undefined") return false;
 
+    const purgedData = {
+      status: "RESOLVED" as const,
+      victim_info: {
+        name: "[TERHAPUS - PROTOKOL PEMBERSIHAN]",
+        age: 0,
+        last_clothing: "[TERHAPUS]",
+        photo_url: null
+      },
+      incident_info: {
+        last_seen_location: "[TERHAPUS]",
+        geo_coordinates: { latitude: 0, longitude: 0 },
+        suspect_description: "[TERHAPUS]"
+      },
+      ai_summary: "[DATA DIHAPUS SEPENUHNYA - KASUS SELESAI]",
+      "timestamps.updated_at": new Date().toISOString(),
+      "timestamps.terminated_at": new Date().toISOString()
+    };
+
+    // Mode: Real Firestore Active
+    if (hasRealCredentials && realDb) {
+      try {
+        const docRef = doc(realDb, "alerts", internalCaseId);
+        await updateDoc(docRef, purgedData);
+        console.log(`[FIREBASE] Cryptographic purge executed on Firestore Case: ${internalCaseId}`);
+      } catch (err) {
+        console.error("[FIREBASE] Firestore purge failed, falling back to local wipe:", err);
+      }
+    }
+
+    // Update Local Cache
     const alerts = await this.getAlerts();
     const updatedAlerts = alerts.map(alert => {
       if (alert.internal_case_id === internalCaseId) {
@@ -151,17 +261,17 @@ class MockDatabase {
           ...alert,
           status: "RESOLVED" as const,
           victim_info: {
-            name: "[DELETED - PURGE PROTOCOL]",
+            name: "[TERHAPUS - PROTOKOL PEMBERSIHAN]",
             age: 0,
-            last_clothing: "[DELETED]",
+            last_clothing: "[TERHAPUS]",
             photo_url: null
           },
           incident_info: {
-            last_seen_location: "[DELETED]",
+            last_seen_location: "[TERHAPUS]",
             geo_coordinates: { latitude: 0, longitude: 0 },
-            suspect_description: "[DELETED]"
+            suspect_description: "[TERHAPUS]"
           },
-          ai_summary: "[ERASED - CASE DECOMMISSIONED]",
+          ai_summary: "[DATA DIHAPUS SEPENUHNYA - KASUS SELESAI]",
           timestamps: {
             ...alert.timestamps,
             updated_at: new Date().toISOString(),
@@ -172,23 +282,17 @@ class MockDatabase {
       return alert;
     });
 
-    // Write wiped cases list back to storage
     localStorage.setItem(this.alertsKey, JSON.stringify(updatedAlerts));
-    
-    // Clear device-level memory, notifications, and cached copy states
     this.triggerClientMemoryErasure(internalCaseId);
-
     return true;
   }
 
   private triggerClientMemoryErasure(caseId: string) {
     console.log(`[PURGE] Cryptographic memory zero-wipe executed for Case ID: ${caseId}`);
     if (typeof window !== "undefined") {
-      // Clear clipboard caches, temporary logs, or session indicators
       if (navigator.clipboard) {
         navigator.clipboard.writeText("").catch(() => {});
       }
-      // Broadcast storage event to alert other active viewports
       window.dispatchEvent(new CustomEvent("lapang-purge", { detail: { caseId } }));
     }
   }
@@ -221,16 +325,28 @@ class MockDatabase {
     const queue = this.getOfflineQueue();
     if (queue.length === 0) return;
 
-    console.log(`[QUEUE] Connection re-established. Flushing ${queue.length} stashed reports to database...`);
+    console.log(`[QUEUE] Connection re-established. Flushing ${queue.length} stashed reports...`);
     
-    // Mock processing each report (pushing reports to firestore cases log)
     const alerts = await this.getAlerts();
     for (const report of queue) {
       const parentCase = alerts.find(a => a.secure_token_id === report.case_token);
       if (parentCase) {
-        // Appending the user report to the suspect descriptor / incident info log in mock environment
-        parentCase.incident_info.suspect_description += `\n[BYSTANDER REPORT ${report.timestamp}]: ${report.narrative} (Triangulated near Lat: ${report.reporter_coords.latitude.toFixed(4)}, Long: ${report.reporter_coords.longitude.toFixed(4)})`;
+        const updateStr = `\n[LAPORAN WARGA ${report.timestamp}]: ${report.narrative} (Koordinat Lat: ${report.reporter_coords.latitude.toFixed(4)}, Long: ${report.reporter_coords.longitude.toFixed(4)})`;
+        parentCase.incident_info.suspect_description += updateStr;
         parentCase.timestamps.updated_at = new Date().toISOString();
+
+        // Mode: Real Firestore Active
+        if (hasRealCredentials && realDb) {
+          try {
+            const docRef = doc(realDb, "alerts", parentCase.internal_case_id);
+            await updateDoc(docRef, {
+              "incident_info.suspect_description": parentCase.incident_info.suspect_description,
+              "timestamps.updated_at": parentCase.timestamps.updated_at
+            });
+          } catch (err) {
+            console.error("[FIREBASE] Firestore offline sync failed:", err);
+          }
+        }
       }
     }
 
@@ -239,63 +355,27 @@ class MockDatabase {
     window.dispatchEvent(new Event("lapang-queue-flushed"));
   }
 
-  // --- FCM NOTIFICATION ENGINE ---
+  // --- FCM NOTIFICATION ENGINE (Real Dispatch Preview) ---
 
   private dispatchMockFCMNotification(alert: CaseAlert): void {
     console.log(`[FCM ENGINE] Dispaching high priority push alert payload:`, {
       priority: "high",
       content_available: true,
-      android: {
-        priority: "high",
-        ttl: "0s", // Deliver immediately
-        notification: {
-          click_action: "FLASHzeroSDK.LOCKSCREEN_TAKEOVER",
-          sound: "tactical_alarm.mp3"
-        }
-      },
-      apns: {
-        headers: {
-          "apns-priority": "10",
-          "apns-push-type": "alert"
-        },
-        payload: {
-          aps: {
-            alert: {
-              title: `SIAGA 1: Penculikan Anak!`,
-              body: alert.ai_summary
-            },
-            sound: "critical_alarm.wav",
-            "volume-override": 1.0 // Overrides device mute profiles
-          }
-        }
-      },
       data: {
         token: alert.secure_token_id,
         victim_name: alert.victim_info.name,
         victim_age: String(alert.victim_info.age),
-        victim_photo: alert.victim_info.photo_url || "",
         incident_location: alert.incident_info.last_seen_location
       }
     });
 
     if (typeof window !== "undefined") {
-      // Trigger a custom event in the browser window to mock immediate lockscreen alert
       window.dispatchEvent(new CustomEvent("lapang-fcm-received", { detail: alert }));
     }
   }
 }
 
-// Global singletons for app-wide import
-export const db = new MockDatabase();
-export const messaging = {
-  getToken: async () => "mock-device-fcm-token-1234567890",
-  onMessage: (callback: (payload: any) => void) => {
-    if (typeof window !== "undefined") {
-      const handler = (e: Event) => callback((e as CustomEvent).detail);
-      window.addEventListener("lapang-fcm-received", handler);
-      return () => window.removeEventListener("lapang-fcm-received", handler);
-    }
-    return () => {};
-  }
-};
-export { firebaseConfig };
+// Global Singletons
+export const db = new HybridDatabase();
+export const messaging = realMessaging;
+export { app as firebaseApp, realDb as firestoreDb };

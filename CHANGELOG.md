@@ -15,3 +15,8 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Implemented `page.tsx` displaying the POLRI Command Dashboard with safety triggers, map triangulation vectors, and simulated network offline queue controls.
 - Created `route.ts` API endpoint integrating Google Gemini 1.5 Flash parsing with fallback heuristic regex parsers.
 - Successfully verified and compiled production build (`npm run build`).
+- Integrated real Firebase Client SDK (Firestore & Messaging) dynamically mapped to environments in `firebase.ts`.
+- Automated Web app registration in Google Cloud project `mockuplens` and credentials population in `.env.local` via Firebase MCP server.
+- Fully localized the POLRI Command Dashboard interface (`page.tsx`) into Indonesian formal, tactical language.
+- Built a mobile-optimized public citizen device simulator page at `/simulator` (`src/app/simulator/page.tsx`) using Notification permissions and VAPID FCM registration.
+- Added `public/firebase-messaging-sw.js` service worker background listener to stabilize client FCM token fetches.
