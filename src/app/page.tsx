@@ -830,7 +830,7 @@ export default function Page() {
         </div>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5 text-cyan-beacon animate-pulse" /> TELEMETRI STATS: SEHAT</span>
-          <span>WAKTU UTAMA: {new Date().toLocaleTimeString()}</span>
+          <span suppressHydrationWarning>WAKTU UTAMA: {new Date().toLocaleTimeString()}</span>
         </div>
       </footer>
 
