@@ -154,6 +154,7 @@ export default function Page() {
   // Compile FCM Payload on form changes
   useEffect(() => {
     const payload = {
+      topic: "siaga_anak_hilang",
       priority: "high",
       content_available: true,
       android: {
@@ -180,7 +181,6 @@ export default function Page() {
         }
       },
       data: {
-        token: targetDeviceToken,
         victim_name: victimName || "ANONIM",
         victim_age: String(victimAge),
         victim_photo: photoUrl || "null",
@@ -191,7 +191,7 @@ export default function Page() {
       }
     };
     setCompiledPayload(payload);
-  }, [victimName, victimAge, victimClothing, lastSeenLocation, photoUrl, targetDeviceToken, geoLat, geoLong, radius]);
+  }, [victimName, victimAge, victimClothing, lastSeenLocation, photoUrl, geoLat, geoLong, radius]);
 
   // Dispatch FCM Emergency Alert
   const handleDispatch = async () => {
@@ -203,12 +203,7 @@ export default function Page() {
     setBroadcastError(null);
     setIsDispatching(true);
 
-    // Validate if the token is a real FCM token
-    if (!targetDeviceToken || targetDeviceToken === "lp_token_siap_siar" || targetDeviceToken.startsWith("fcm_mock")) {
-      setBroadcastError("Gagal mengirim: Token tidak valid atau perangkat belum terdaftar di Firebase (menggunakan Mock Token).");
-      setIsDispatching(false);
-      return;
-    }
+    // (Bypassed individual token check since we route directly to global FCM topic: 'siaga_anak_hilang')
 
     try {
       const result = await db.insertAlert({
@@ -252,6 +247,26 @@ export default function Page() {
         }).catch(err => console.error("Failed to push alert to API bridge:", err));
       } catch (err) {
         console.error("Failed to push alert to API bridge:", err);
+      }
+
+      // Also post to our brand new send-alert topic routing dispatcher endpoint!
+      try {
+        fetch("/api/send-alert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alert: result, radius })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
+            console.error("Failed to dispatch alert to topic:", data.error);
+          } else {
+            console.log("Alert dispatched successfully to topic:", data);
+          }
+        })
+        .catch(err => console.error("Failed to call topic dispatcher API:", err));
+      } catch (err) {
+        console.error("Failed to call topic dispatcher API:", err);
       }
     } catch (e) {
       console.error(e);

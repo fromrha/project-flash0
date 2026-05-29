@@ -411,13 +411,16 @@ class HybridDatabase {
 
   private dispatchMockFCMNotification(alert: CaseAlert): void {
     console.log(`[FCM ENGINE] Dispaching high priority push alert payload:`, {
+      topic: "siaga_anak_hilang",
       priority: "high",
       content_available: true,
       data: {
-        token: alert.secure_token_id,
         victim_name: alert.victim_info.name,
         victim_age: String(alert.victim_info.age),
-        incident_location: alert.incident_info.last_seen_location
+        incident_location: alert.incident_info.last_seen_location,
+        latitude_tkp: String(alert.incident_info.geo_coordinates.latitude),
+        longitude_tkp: String(alert.incident_info.geo_coordinates.longitude),
+        radius_km: "2"
       }
     });
 

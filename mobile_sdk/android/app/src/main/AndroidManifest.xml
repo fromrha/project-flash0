@@ -15,11 +15,13 @@
     
     <!-- Android 13+ Notification Runtime Permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
    <application
         android:label="LAPANG Emergency Client"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         
         <activity
             android:name=".MainActivity"
