@@ -6,6 +6,30 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 ### Added
+- Created 80%-width Side Navigation Drawer overlays on both Next.js Web Simulator and Flutter Standalone Client, containing identical tabs (Beranda, Sistem Telemetri, Cara Kerja, Lisensi Kode, Tentang & Kontes).
+- Embedded live real-time clock stream and current GPS coordinates in Drawer Footers.
+- Implemented custom `CyberGridPainter` grid backdrop in Flutter for a glowing tactical blueprint effect.
+- Added automatic full-screen immersive mode (`SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky)`) in Flutter when an emergency alert is active, restoring edge-to-edge system navigation on exit.
+- Collapsible Telemetry Sheet interface inside the Flutter client SDK (`main.dart`) mirroring the Next.js web simulator.
+- Integrated official white logomark logo as central focus in Next.js standby section.
+
+### Changed
+- Synchronized Status Bar Mockups: Burger Menu toggle button on the left, capsule badge "SISTEM AKTIF" with a glowing pulsing green neon dot animation on the right.
+- Perfectly centered the standby layouts vertically and horizontally on both platforms with bold uppercase "LAPANG" title, "Laporan Anak Hilang" subtitle, centered white logomark, and geocoded sector status text.
+- Re-routed the Collapsible Telemetry Sheet into the new drawer-based system telemetri view for a clean production interface.
+- Reworked bottom alert cards to display: "Melihat indikasi atau percobaan penculikan anak? [ LAPOR SEGERA ]", mapped to launch the respective reporting modals.
+- Synchronized design, layout, and copywriting between Next.js Simulator and Flutter SDK to feature "LAPANG POLRI // JALUR UTAMA" and glowing "PERLINDUNGAN AKTIF GEOFENCE".
+- Adopted Brand Guideline safety tagline: "Keterbukaan Informasi, Kecepatan Penyelamatan" and radius monitoring subtext.
+- Moved the Collapsible Telemetry Panel inside the simulated phone screen layout frame on Next.js.
+- Removed mock Wi-Fi icon button from status bar.
+- Replaced central radar visual in Flutter dashboard screen with white `LapangLogomarkPainter`.
+
+### Fixed
+- Fixed compilation and syntax parsing errors in Next.js web simulator layout.
+- Fixed APK build and Kotlin gradle asset bundling compatibility.
+- Fixed compilation and analyzer errors in `main.dart` (removed invalid `audioStreamType` and fixed `maxHeight` container constraints).
+
+### Added (Previous)
 - Complete README rewrite with banner, shields.io badges, mermaid architecture diagrams, sequence diagrams, structured tables, and zero-emoji tactical tone.
 - Apache 2.0 LICENSE file with patent protection for public safety SDK adoption.
 - CONTRIBUTING.md with development setup, branching model, and commit conventions.
@@ -15,7 +39,7 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Open Graph and Twitter Card metadata in `layout.tsx` for social media link previews using the LAPANG banner.
 - Organized `docs/` directory with blueprint and logo assets.
 
-### Changed
+### Changed (Previous)
 - Moved technical blueprint to `docs/`.
 - Removed stale `android_winusb.inf` and publication recommendation file from root.
 
