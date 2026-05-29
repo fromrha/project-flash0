@@ -56,3 +56,15 @@ next-env.d.ts
 **/.idea/
 build/
 **/build/
+
+# Java heap dumps
+*.hprof
+
+# SDK tooling zips
+mobile_sdk/cmdtools.zip
+
+# Flutter logs
+mobile_sdk/*.log
+
+# Android local properties
+**/local.properties
