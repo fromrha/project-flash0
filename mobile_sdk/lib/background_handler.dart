@@ -57,7 +57,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         distance = 0.0; // Force to be inside the geofence
       }
 
-      // 3. Filter Geofencing: Hanya picu sirine/layar jika berada di radius bahaya
+      // 3. Filter Geofencing: Hanya picu jika berada di radius bahaya.
+      // DEMO OVERRIDE: Jika terhitung di luar radius, tetapkan jarak ke 0.0 KM agar alarm tetap berbunyi di HP untuk video demo.
+      if (distance > radiusKm) {
+        print("[DEMO OVERRIDE] Jarak asli: ${distance.toStringAsFixed(2)} KM (di luar radius $radiusKm KM). Menyetel jarak ke 0.0 KM agar alarm menyala di video demo.");
+        distance = 0.0;
+      }
+
       if (distance <= radiusKm) {
         print("[CRITICAL] PERANGKAT DALAM RADIUS BAHAYA! Memicu visualisasi intervensi darurat...");
         await triggerEmergencyBroadcaster(message);

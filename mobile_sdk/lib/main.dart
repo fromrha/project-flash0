@@ -39,8 +39,30 @@ void main() async {
         print("Notification clicked: ${response.payload}");
       },
     );
+
+    // Buat channel notifikasi khusus dengan prioritas tinggi dan suara sirine
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'lapang_emergency_channel', // id
+      'Siaran Siaga Darurat LAPANG', // name
+      description: 'Pemberitahuan darurat penculikan anak berkecepatan tinggi',
+      importance: Importance.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('siren'),
+      enableVibration: true,
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    // Daftarkan listener pesan foreground agar alert muncul saat aplikasi terbuka
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("[LAPANG Foreground SDK] Sinyal FCM Diterima di Foreground: ${message.messageId}");
+      firebaseMessagingBackgroundHandler(message);
+    });
+
   } catch (notiErr) {
-    print("[ERROR] Local notifications initialization crash bypassed: $notiErr");
+    print("[ERROR] Local notifications / foreground listener initialization failed: $notiErr");
   }
 
   runApp(const MyApp());
