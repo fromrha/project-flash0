@@ -6,6 +6,21 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 ### Added
+- Complete README rewrite with banner, shields.io badges, mermaid architecture diagrams, sequence diagrams, structured tables, and zero-emoji tactical tone matching brand guidelines.
+- Apache 2.0 LICENSE file with patent protection for public safety SDK adoption.
+- CONTRIBUTING.md with development setup, branching model, and commit conventions.
+- SECURITY.md with vulnerability disclosure policy and data handling scope.
+- CODE_OF_CONDUCT.md tailored for child safety project sensitivity.
+- `.env.example` template for dashboard Firebase credentials.
+- Open Graph and Twitter Card metadata in `layout.tsx` for social media link previews using the LAPANG banner.
+- Organized `docs/` directory with brand guideline, blueprint, and logo assets.
+
+### Changed
+- Moved all brand assets (SVGs, banner JPG) from project root to `docs/assets/`.
+- Moved brand guideline and technical blueprint to `docs/`.
+- Removed stale `android_winusb.inf` and publication recommendation file from root.
+
+### Fixed
 - Integrated native Android `MediaPlayer` inside `MainActivity.kt` to play raw resource audio files (e.g. `siren.aac` in `res/raw`) directly, bypassing Android notification channel caching bugs.
 - Implemented `_lastProcessedTokenId` Case ID deduplication barrier in `main.dart` and `intent.removeExtra("alert_data")` cleanup inside `MainActivity.kt` to prevent manual launch replay loops when the app is restarted from Android history or launcher icon.
 - Created native `EmergencyReceiver` Kotlin class to capture Android-level FCM broadcasts and immediately launch `MainActivity` to show the alert takeover screen when the phone is on/in-use.
