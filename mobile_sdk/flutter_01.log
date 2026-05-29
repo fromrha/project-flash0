@@ -1,0 +1,113 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter build apk --debug
+
+## exception
+
+ProcessException: ProcessException: Process exited abnormally with exit code 1:
+
+Welcome to Gradle 8.0!
+
+For more details see https://docs.gradle.org/8.0/release-notes.html
+
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Cannot locate tasks that match 'app:tasks' as project 'app' not found in root project 'android'.
+
+* Try:
+> Run gradlew projects to get a list of available projects.
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+
+BUILD FAILED in 3s
+  Command: D:\Antigravity\Project\project-flash0\mobile_sdk\android\gradlew.bat app:tasks --all --console=auto
+
+```
+#0      RunResult.throwException (package:flutter_tools/src/base/process.dart:125:5)
+#1      _DefaultProcessUtils.run (package:flutter_tools/src/base/process.dart:321:19)
+<asynchronous suspension>
+#2      flavorUndefinedHandler.<anonymous closure> (package:flutter_tools/src/android/gradle_errors.dart:269:38)
+<asynchronous suspension>
+#3      AndroidGradleBuilder.buildGradleApp (package:flutter_tools/src/android/gradle.dart:503:40)
+<asynchronous suspension>
+#4      AndroidGradleBuilder.buildApk (package:flutter_tools/src/android/gradle.dart:223:5)
+<asynchronous suspension>
+#5      BuildApkCommand.runCommand (package:flutter_tools/src/commands/build_apk.dart:140:5)
+<asynchronous suspension>
+#6      FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1394:27)
+<asynchronous suspension>
+#7      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:153:19)
+<asynchronous suspension>
+#8      CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#9      FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:372:9)
+<asynchronous suspension>
+#10     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:153:19)
+<asynchronous suspension>
+#11     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:308:5)
+<asynchronous suspension>
+#12     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:130:9)
+<asynchronous suspension>
+#13     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:153:19)
+<asynchronous suspension>
+#14     main (package:flutter_tools/executable.dart:93:3)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[✓] Flutter (Channel stable, 3.22.3, on Microsoft Windows [Version 10.0.26200.8457], locale en-US)
+    • Flutter version 3.22.3 on channel stable at D:\flutter
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision b0850beeb2 (1 year, 10 months ago), 2024-07-16 21:43:41 -0700
+    • Engine revision 235db911ba
+    • Dart version 3.4.4
+    • DevTools version 2.34.3
+
+[✓] Windows Version (Installed version of Windows is version 10 or higher)
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 34.0.0)
+    • Android SDK at C:\Users\rahma\AppData\Local\Android\Sdk
+    • Platform android-34, build-tools 34.0.0
+    • Java binary at: C:\Program Files\Eclipse Adoptium\jdk-17.0.19.10-hotspot\bin\java
+    • Java version OpenJDK Runtime Environment Temurin-17.0.19+10 (build 17.0.19+10)
+    • All Android licenses accepted.
+
+[✓] Chrome - develop for the web
+    • Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[✗] Visual Studio - develop Windows apps
+    ✗ Visual Studio not installed; this is necessary to develop Windows apps.
+      Download at https://visualstudio.microsoft.com/downloads/.
+      Please install the "Desktop development with C++" workload, including all of its default components
+
+[!] Android Studio (not installed)
+    • Android Studio not found; download from https://developer.android.com/studio/index.html
+      (or visit https://flutter.dev/docs/get-started/install/windows#android-setup for detailed instructions).
+
+[✓] VS Code (version unknown)
+    • VS Code at C:\Users\rahma\AppData\Local\Programs\Microsoft VS Code
+    • Flutter extension can be installed from:
+      🔨 https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter
+    ✗ Unable to determine VS Code version.
+
+[✓] Connected device (3 available)
+    • Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.26200.8457]
+    • Chrome (web)      • chrome  • web-javascript • Google Chrome 148.0.7778.179
+    • Edge (web)        • edge    • web-javascript • Microsoft Edge 148.0.3967.83
+
+[✓] Network resources
+    • All expected network resources are available.
+
+! Doctor found issues in 2 categories.
+```

@@ -108,8 +108,6 @@ Future<void> triggerEmergencyBroadcaster(RemoteMessage message) async {
     
     // Bypass lockscreen with custom layout
     fullScreenIntent: true,
-    showWhenLocked: true,
-    turnScreenOn: true,
     
     // Play custom alert sound siren.mp3 (placed in android/app/src/main/res/raw/siren.mp3)
     sound: const RawResourceAndroidNotificationSound('siren'),
