@@ -36,20 +36,23 @@ export async function POST(request: Request) {
       // Lazy load firebase-admin so it does not fail initialization if credentials are empty
       const firebaseAdmin = require("firebase-admin");
       
-      const hasCredentials = process.env.FIREBASE_SERVICE_ACCOUNT || 
+      const hasServiceAccount = !!process.env.FIREBASE_SERVICE_ACCOUNT;
+      const hasCredentials = hasServiceAccount || 
                              process.env.GOOGLE_APPLICATION_CREDENTIALS || 
                              process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
       if (hasCredentials) {
         if (firebaseAdmin.apps.length === 0) {
-          firebaseAdmin.initializeApp({
-            credential: firebaseAdmin.credential.cert(
-              process.env.FIREBASE_SERVICE_ACCOUNT 
-                ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT) 
-                : undefined
-            ),
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-          });
+          const config: any = {};
+          if (hasServiceAccount) {
+            try {
+              config.credential = firebaseAdmin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!));
+            } catch (err) {
+              console.error("[FCM DISPATCHER] Failed to parse service account JSON:", err);
+            }
+          }
+          config.projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+          firebaseAdmin.initializeApp(config);
         }
         
         const response = await firebaseAdmin.messaging().send(payload);

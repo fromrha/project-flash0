@@ -14,43 +14,48 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 /// Runs in a dedicated background isolate even when app is suspended or killed
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Ensure Firebase is initialized inside the background isolate context
-  await Firebase.initializeApp();
+  try {
+    // Ensure Firebase is initialized inside the background isolate context
+    await Firebase.initializeApp();
 
-  print("[LAPANG Background SDK] Sinyal FCM Diterima: ${message.messageId}");
-  
-  final Map<String, dynamic> data = message.data;
-  
-  // Extract coordinate parameters from Next.js Dashboard payload
-  if (data.containsKey('latitude_tkp') &&
-      data.containsKey('longitude_tkp') &&
-      data.containsKey('radius_km')) {
-      
-    final double? latTkp = double.tryParse(data['latitude_tkp'] ?? '');
-    final double? lonTkp = double.tryParse(data['longitude_tkp'] ?? '');
-    final double? radiusKm = double.tryParse(data['radius_km'] ?? '');
+    print("[LAPANG Background SDK] Sinyal FCM Diterima: ${message.messageId}");
+    
+    final Map<String, dynamic> data = message.data;
+    
+    // Extract coordinate parameters from Next.js Dashboard payload
+    if (data.containsKey('latitude_tkp') &&
+        data.containsKey('longitude_tkp') &&
+        data.containsKey('radius_km')) {
+        
+      final double? latTkp = double.tryParse(data['latitude_tkp'] ?? '');
+      final double? lonTkp = double.tryParse(data['longitude_tkp'] ?? '');
+      final double? radiusKm = double.tryParse(data['radius_km'] ?? '');
 
-    if (latTkp == null || lonTkp == null || radiusKm == null) {
-      print("[WARN] Payload TKP tidak lengkap atau salah tipe data.");
-      return;
-    }
+      if (latTkp == null || lonTkp == null || radiusKm == null) {
+        print("[WARN] Payload TKP tidak lengkap atau salah tipe data.");
+        return;
+      }
 
-    try {
-      // 1. Ambil koordinat GPS live perangkat warga di latar belakang
-      final Position currentPos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 8),
-      );
+      double distance = 0.0;
+      try {
+        // 1. Ambil koordinat GPS live perangkat warga di latar belakang
+        final Position currentPos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 8),
+        );
 
-      // 2. Hitung jarak riil perangkat ke TKP menggunakan Haversine Formula
-      final double distance = calculateHaversineDistance(
-        currentPos.latitude,
-        currentPos.longitude,
-        latTkp,
-        lonTkp,
-      );
-
-      print("[GEOPROXIMITY] Jarak ke TKP: ${distance.toStringAsFixed(3)} KM. Batas Radius: $radiusKm KM.");
+        // 2. Hitung jarak riil perangkat ke TKP menggunakan Haversine Formula
+        distance = calculateHaversineDistance(
+          currentPos.latitude,
+          currentPos.longitude,
+          latTkp,
+          lonTkp,
+        );
+        print("[GEOPROXIMITY] Jarak ke TKP: ${distance.toStringAsFixed(3)} KM. Batas Radius: $radiusKm KM.");
+      } catch (geolocatorErr) {
+        print("[WARN] Geolocator/Haversine failed inside Isolate: $geolocatorErr. Fallback: distance = 0.0 KM to force alert.");
+        distance = 0.0; // Force to be inside the geofence
+      }
 
       // 3. Filter Geofencing: Hanya picu sirine/layar jika berada di radius bahaya
       if (distance <= radiusKm) {
@@ -59,13 +64,16 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       } else {
         print("[GEOPROXIMITY] Perangkat aman (di luar radius). Mengabaikan sinyal secara senyap.");
       }
-    } catch (err) {
-      print("[ERROR] Gagal mengeksekusi triangulasi lokasi background: $err");
-      // Fallback: Selalu picu peringatan demi keselamatan jika GPS bermasalah
+    } else {
+      print("[WARN] FCM payload tidak mengandung data geofencing TKP. Fallback: memicu siaran.");
       await triggerEmergencyBroadcaster(message);
     }
-  } else {
-    print("[WARN] FCM payload tidak mengandung data geofencing TKP.");
+  } catch (globalErr) {
+    print("[FATAL] Error in background isolate message handler: $globalErr");
+    // Absolute fallback: try to show the notification
+    try {
+      await triggerEmergencyBroadcaster(message);
+    } catch (_) {}
   }
 }
 
