@@ -68,3 +68,6 @@ mobile_sdk/*.log
 
 # Android local properties
 **/local.properties
+
+# Internal brand guideline (not for public repo)
+docs/BRAND_GUIDELINE.md

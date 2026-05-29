@@ -4,7 +4,7 @@ LAPANG is an open-source emergency alert framework built to protect children in 
 
 ## Before You Start
 
-Read the [Brand Guideline](docs/BRAND_GUIDELINE.md) and [Technical Blueprint](docs/BLUEPRINT.md) to understand the project's architecture and communication standards.
+Read the [Technical Blueprint](docs/BLUEPRINT.md) to understand the project's architecture and design decisions.
 
 ## Development Setup
 

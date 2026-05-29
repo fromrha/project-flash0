@@ -6,18 +6,17 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 ### Added
-- Complete README rewrite with banner, shields.io badges, mermaid architecture diagrams, sequence diagrams, structured tables, and zero-emoji tactical tone matching brand guidelines.
+- Complete README rewrite with banner, shields.io badges, mermaid architecture diagrams, sequence diagrams, structured tables, and zero-emoji tactical tone.
 - Apache 2.0 LICENSE file with patent protection for public safety SDK adoption.
 - CONTRIBUTING.md with development setup, branching model, and commit conventions.
 - SECURITY.md with vulnerability disclosure policy and data handling scope.
 - CODE_OF_CONDUCT.md tailored for child safety project sensitivity.
 - `.env.example` template for dashboard Firebase credentials.
 - Open Graph and Twitter Card metadata in `layout.tsx` for social media link previews using the LAPANG banner.
-- Organized `docs/` directory with brand guideline, blueprint, and logo assets.
+- Organized `docs/` directory with blueprint and logo assets.
 
 ### Changed
-- Moved all brand assets (SVGs, banner JPG) from project root to `docs/assets/`.
-- Moved brand guideline and technical blueprint to `docs/`.
+- Moved technical blueprint to `docs/`.
 - Removed stale `android_winusb.inf` and publication recommendation file from root.
 
 ### Fixed

@@ -119,7 +119,6 @@ project-flash0/
 │           └── java/.../EmergencyReceiver.kt  # Broadcast receiver
 │
 ├── docs/
-│   ├── BRAND_GUIDELINE.md        # Visual identity and tone of voice
 │   ├── BLUEPRINT.md              # Technical specification
 │   └── assets/                   # Logo variants and banner
 │
@@ -256,7 +255,7 @@ Indonesia's SMS channels suffer from carrier-level spam pollution. Class 0 messa
 
 ## Color System
 
-Derived from the LAPANG brand identity — a "Tactical Mission-Critical Command Center" aesthetic.
+A "Tactical Mission-Critical Command Center" aesthetic with high contrast and luminous accents.
 
 | Token | Hex | Usage |
 |:------|:----|:------|
@@ -289,7 +288,6 @@ Derived from the LAPANG brand identity — a "Tactical Mission-Critical Command 
 
 | Document | Description |
 |:---------|:------------|
-| [Brand Guideline](docs/BRAND_GUIDELINE.md) | Visual identity, color system, logo philosophy, and tone of voice |
 | [Technical Blueprint](docs/BLUEPRINT.md) | Full architecture specification, data schemas, and feature classification |
 | [Contributing](CONTRIBUTING.md) | Development setup, branching model, and PR guidelines |
 | [Security Policy](SECURITY.md) | Vulnerability disclosure and data handling procedures |
