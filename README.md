@@ -3,8 +3,15 @@
 </p>
 
 <p align="center">
+  <a href="https://rsvp.withgoogle.com/events/juaravibecoding">
+    <img src="docs/assets/juaravibecoding.jpg" alt="Google Juara Vibe Coding" width="100%" />
+  </a>
+</p>
+
+<p align="center">
   <strong>LAPoran Anak hilaNG</strong><br/>
-  <em>Waspada Bersama, Selamatkan Segera.</em>
+  <em>Waspada Bersama, Selamatkan Segera.</em><br/><br/>
+  <strong>An official submission for the <a href="https://rsvp.withgoogle.com/events/juaravibecoding">Google Juara Vibe Coding</a> Competition.</strong>
 </p>
 
 <p align="center">
@@ -312,6 +319,6 @@ Copyright 2026 Rahman (project-flash0 / LAPANG)
 </p>
 
 <p align="center">
-  <sub>Built for the <a href="https://juara.google/">Google Juara Vibe Coding Competition</a>, Jakarta 2026.</sub><br/>
+  <sub>An official submission for the <a href="https://rsvp.withgoogle.com/events/juaravibecoding">Google Juara Vibe Coding</a> Competition, Jakarta 2026.</sub><br/>
   <sub><em>Waspada Bersama, Selamatkan Segera.</em></sub>
 </p>
