@@ -58,64 +58,83 @@ export default function SimulatorPage() {
     if (typeof window !== "undefined") {
       const handleFcm = (e: Event) => {
         const alertData = (e as CustomEvent).detail;
-        setSimulatedAlert(alertData);
-        setSimulatedIncomingAlert(true);
-        addDeviceLog(`[ALERT RECEIVER] FCM High-Priority Diterima: ${alertData.victim_info.name}`);
         
-        // Play emergency siren sound
-        try {
-          new Audio('/alert.aac').play()
-            .then(() => addDeviceLog("TELEMETRI AUDIO: Sirine darurat diputar!"))
-            .catch(err => {
-              console.warn("Audio play blocked by browser autoplay policy:", err);
-              addDeviceLog("TELEMETRI AUDIO: Sirine diblokir oleh kebijakan browser.");
-            });
-        } catch (audioErr) {
-          console.error("Audio playback error:", audioErr);
+        // Save the alert data into simulatedAlert (so the ledger/view updates)
+        setSimulatedAlert(alertData);
+
+        // Strict Timestamp Validation Barrier: 10 seconds threshold
+        let isBrandNew = true;
+        if (alertData.timestamps?.created_at) {
+          const createdAtTime = new Date(alertData.timestamps.created_at).getTime();
+          const nowTime = new Date().getTime();
+          const diffMs = Math.abs(nowTime - createdAtTime);
+          if (diffMs > 10000) {
+            isBrandNew = false;
+          }
         }
 
-        // Try trigger native notification
-        if (Notification.permission === "granted") {
-          if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-            navigator.serviceWorker.ready
-              .then((registration) => {
-                registration.showNotification("SIAGA 1: Penculikan Anak!", {
-                  body: alertData.ai_summary,
-                  icon: "/favicon.ico",
-                  badge: "/favicon.ico",
-                  tag: alertData.internal_case_id,
-                  requireInteraction: true,
-                  vibrate: [500, 100, 500, 100, 500],
-                  actions: [
-                    { action: "view", title: "LIHAT DETAIL KASUS" }
-                  ],
-                  renotify: true
-                } as any);
-              })
-              .catch(() => {
-                try {
-                  new Notification("SIAGA 1: Penculikan Anak!", {
+        if (isBrandNew) {
+          setSimulatedIncomingAlert(true);
+          addDeviceLog(`[ALERT RECEIVER] FCM High-Priority Diterima (BARU): ${alertData.victim_info.name}`);
+          
+          // Play emergency siren sound
+          try {
+            new Audio('/alert.aac').play()
+              .then(() => addDeviceLog("TELEMETRI AUDIO: Sirine darurat diputar!"))
+              .catch(err => {
+                console.warn("Audio play blocked by browser autoplay policy:", err);
+                addDeviceLog("TELEMETRI AUDIO: Sirine diblokir oleh kebijakan browser.");
+              });
+          } catch (audioErr) {
+            console.error("Audio playback error:", audioErr);
+          }
+
+          // Try trigger native notification
+          if (Notification.permission === "granted") {
+            if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+              navigator.serviceWorker.ready
+                .then((registration) => {
+                  registration.showNotification("SIAGA 1: Penculikan Anak!", {
                     body: alertData.ai_summary,
                     icon: "/favicon.ico",
+                    badge: "/favicon.ico",
                     tag: alertData.internal_case_id,
-                    requireInteraction: true
-                  });
-                } catch (err) {
-                  console.warn("Failed to construct Notification fallback:", err);
-                }
-              });
-          } else {
-            try {
-              new Notification("SIAGA 1: Penculikan Anak!", {
-                body: alertData.ai_summary,
-                icon: "/favicon.ico",
-                tag: alertData.internal_case_id,
-                requireInteraction: true
-              });
-            } catch (err) {
-              console.warn("Failed to construct Notification:", err);
+                    requireInteraction: true,
+                    vibrate: [500, 100, 500, 100, 500],
+                    actions: [
+                      { action: "view", title: "LIHAT DETAIL KASUS" }
+                    ],
+                    renotify: true
+                  } as any);
+                })
+                .catch(() => {
+                  try {
+                    new Notification("SIAGA 1: Penculikan Anak!", {
+                      body: alertData.ai_summary,
+                      icon: "/favicon.ico",
+                      tag: alertData.internal_case_id,
+                      requireInteraction: true
+                    });
+                  } catch (err) {
+                    console.warn("Failed to construct Notification fallback:", err);
+                  }
+                });
+            } else {
+              try {
+                new Notification("SIAGA 1: Penculikan Anak!", {
+                  body: alertData.ai_summary,
+                  icon: "/favicon.ico",
+                  tag: alertData.internal_case_id,
+                  requireInteraction: true
+                });
+              } catch (err) {
+                console.warn("Failed to construct Notification:", err);
+              }
             }
           }
+        } else {
+          // Silent append to active tracking ledger table
+          addDeviceLog(`[ALERT RECEIVER] Data Historis Diarsip secara Senyap: ${alertData.victim_info.name}`);
         }
       };
 
