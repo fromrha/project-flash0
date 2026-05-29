@@ -211,14 +211,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  String? _lastProcessedTokenId;
+
   void _handleIncomingAlert(Map<String, dynamic> data) {
-    if (data.containsKey('victim_name')) {
-      setState(() {
-        _incomingAlertData = data;
-        _showReportForm = false; // Reset to details screen for new alert
-      });
-      _addLog("SIAGA 1 PENCULIKAN: ${data['victim_name']} (${data['victim_age']}th)");
+    final String victimName = data['victim_name'] ?? '';
+    final String tokenId = data['secure_token_id'] ?? '';
+    
+    if (victimName.isEmpty && tokenId.isEmpty) {
+      return; // Ignore empty/corrupted payloads
     }
+
+    if (tokenId.isNotEmpty && tokenId == _lastProcessedTokenId) {
+      _addLog("Abaikan alert duplikat untuk Kasus: $tokenId");
+      return; // Deduplicate
+    }
+
+    _lastProcessedTokenId = tokenId.isNotEmpty ? tokenId : victimName;
+
+    setState(() {
+      _incomingAlertData = data;
+      _showReportForm = false; // Reset to details screen for new alert
+    });
+    _addLog("SIAGA 1 PENCULIKAN: ${data['victim_name']} (${data['victim_age']}th)");
   }
 
   Future<void> _requestAllPermissionsAndSetup() async {
@@ -654,6 +668,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     );
                     
+                    // Stop siren via MethodChannel
+                    const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('stopSiren');
+
                     // Close the alert and exit the app to prevent returning to dashboard UI
                     setState(() {
                       _incomingAlertData = null;
@@ -784,6 +801,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               );
               
+              // Stop siren via MethodChannel
+              const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('stopSiren');
+
               // Clear state, overlay, and exit app
               _reportController.clear();
               setState(() {

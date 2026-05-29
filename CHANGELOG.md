@@ -6,6 +6,8 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 ### Added
+- Integrated native Android `MediaPlayer` inside `MainActivity.kt` to play raw resource audio files (e.g. `siren.aac` in `res/raw`) directly, bypassing Android notification channel caching bugs.
+- Implemented `_lastProcessedTokenId` Case ID deduplication barrier in `main.dart` and `intent.removeExtra("alert_data")` cleanup inside `MainActivity.kt` to prevent manual launch replay loops when the app is restarted from Android history or launcher icon.
 - Created native `EmergencyReceiver` Kotlin class to capture Android-level FCM broadcasts and immediately launch `MainActivity` to show the alert takeover screen when the phone is on/in-use.
 - Implemented a native MethodChannel `com.lapang.emergency.sdk/overlay` to communicate incoming FCM alert payloads from Android context directly to the running Flutter UI.
 - Built a back-navigable Form Pengaduan Saksi overlay within the takeover layout matching the citizens simulator design.
