@@ -50,7 +50,7 @@ void main() async {
 
     // Buat channel notifikasi khusus dengan prioritas tinggi dan suara sirine
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'lapang_emergency_channel_v3', // id
+      'lapang_emergency_channel_v4', // id
       'Siaran Siaga Darurat LAPANG', // name
       description: 'Pemberitahuan darurat penculikan anak berkecepatan tinggi',
       importance: Importance.max,
@@ -109,6 +109,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = false;
   Map<String, dynamic>? _incomingAlertData;
   List<String> _telemetryLogs = [];
+  bool _showReportForm = false;
+  final TextEditingController _reportController = TextEditingController();
 
   @override
   void initState() {
@@ -121,12 +123,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _requestAllPermissionsAndSetup();
     _setupFcmUiListeners();
     _setupLocalNotificationListeners();
+    _setupNativeOverlayChannel();
+  }
+
+  @override
+  void dispose() {
+    _reportController.dispose();
+    super.dispose();
   }
 
   void _addLog(String msg) {
     final String timestamp = DateTime.now().toIso8601String().substring(11, 19);
     setState(() {
       _telemetryLogs.insert(0, "[$timestamp] $msg");
+    });
+  }
+
+  void _setupNativeOverlayChannel() {
+    const MethodChannel overlayChannel = MethodChannel('com.lapang.emergency.sdk/overlay');
+    overlayChannel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == "onAlertReceived") {
+        final String? alertJson = call.arguments as String?;
+        if (alertJson != null) {
+          _addLog("FCM Native Broadcast Diterima");
+          _handleLocalNotificationPayload(alertJson);
+        }
+      }
+    });
+
+    overlayChannel.invokeMethod<String?>('getPendingAlert').then((String? alertJson) {
+      if (alertJson != null) {
+        _addLog("FCM Native Launch Diterima");
+        _handleLocalNotificationPayload(alertJson);
+      }
     });
   }
 
@@ -186,6 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (data.containsKey('victim_name')) {
       setState(() {
         _incomingAlertData = data;
+        _showReportForm = false; // Reset to details screen for new alert
       });
       _addLog("SIAGA 1 PENCULIKAN: ${data['victim_name']} (${data['victim_age']}th)");
     }
@@ -436,214 +466,345 @@ class _DashboardScreenState extends State<DashboardScreen> {
       width: double.infinity,
       height: double.infinity,
       child: SafeArea(
-        child: Stack(
-          children: [
-            // Close Button top-right
-            Positioned(
-              top: 10,
-              right: 10,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white54, size: 28),
-                onPressed: () {
-                  setState(() {
-                    _incomingAlertData = null;
-                  });
-                },
+        child: _showReportForm
+            ? _buildReportFormLayout(tokenId)
+            : _buildAlertDetailsLayout(victimName, victimAge, lastSeen, clothing, suspect, summary, tokenId),
+      ),
+    );
+  }
+
+  Widget _buildAlertDetailsLayout(
+    String victimName,
+    String victimAge,
+    String lastSeen,
+    String clothing,
+    String suspect,
+    String summary,
+    String tokenId,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 20),
+          
+          // Tactical Alert Header
+          Column(
+            children: [
+              Container(
+                height: 72,
+                width: 72,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFEF4444), width: 2),
+                ),
+                child: const Icon(
+                  Icons.gpp_bad, // Shield warning icon
+                  color: Color(0xFFEF4444),
+                  size: 40,
+                ),
               ),
-            ),
-            
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  
-                  // Tactical Alert Header
-                  Column(
-                    children: [
-                      Container(
-                        height: 72,
-                        width: 72,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFEF4444), width: 2),
+              const SizedBox(height: 16),
+              const Text(
+                'SIAGA 1: PENCULIKAN ANAK',
+                style: TextStyle(
+                  color: Color(0xFFEF4444),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.0,
+                  fontFamily: 'monospace',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'DARURAT PUSH-ALERT INTENT DILEPAS',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          
+          // Main Tactical Information Card
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 24.0),
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B0F19), // dark card
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withOpacity(0.1),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                  )
+                ]
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with Name and Badge
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$victimName, (${victimAge}th)',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.gpp_bad, // Shield warning icon
-                          color: Color(0xFFEF4444),
-                          size: 40,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFEF4444)),
+                          ),
+                          child: const Text(
+                            'AKTIF',
+                            style: TextStyle(
+                              color: Color(0xFFEF4444),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'SIAGA 1: PENCULIKAN ANAK',
-                        style: TextStyle(
-                          color: Color(0xFFEF4444),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2.0,
-                          fontFamily: 'monospace',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'DARURAT PUSH-ALERT INTENT DILEPAS',
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Main Tactical Information Card
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 24.0),
-                      padding: const EdgeInsets.all(20.0),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Info details
+                    _buildAlertDetailRow('TERAKHIR TERLIHAT:', lastSeen),
+                    const SizedBox(height: 12),
+                    _buildAlertDetailRow('PAKAIAN TERAKHIR:', clothing),
+                    const SizedBox(height: 12),
+                    _buildAlertDetailRow('KENDARAAN PENCULIK:', suspect),
+                    const SizedBox(height: 20),
+                    
+                    // Quote Box
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12.0),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0B0F19), // dark card
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFEF4444).withOpacity(0.1),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                          )
-                        ]
+                        color: const Color(0xFFEF4444).withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.15)),
                       ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header with Name and Badge
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '$victimName, (${victimAge}th)',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: const Color(0xFFEF4444)),
-                                  ),
-                                  child: const Text(
-                                    'AKTIF',
-                                    style: TextStyle(
-                                      color: Color(0xFFEF4444),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Info details
-                            _buildAlertDetailRow('TERAKHIR TERLIHAT:', lastSeen),
-                            const SizedBox(height: 12),
-                            _buildAlertDetailRow('PAKAIAN TERAKHIR:', clothing),
-                            const SizedBox(height: 12),
-                            _buildAlertDetailRow('KENDARAAN PENCULIK:', suspect),
-                            const SizedBox(height: 20),
-                            
-                            // Quote Box
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12.0),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444).withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.15)),
-                              ),
-                              child: Text(
-                                '"$summary"',
-                                style: const TextStyle(
-                                  color: Color(0xFFFDA4AF), // soft pink
-                                  fontSize: 11,
-                                  fontStyle: FontStyle.italic,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
+                      child: Text(
+                        '"$summary"',
+                        style: const TextStyle(
+                          color: Color(0xFFFDA4AF), // soft pink
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          height: 1.4,
                         ),
                       ),
                     ),
-                  ),
-                  
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Menghubungi Kepolisian & Mengirimkan Koordinat GPS...'),
-                                backgroundColor: Color(0xFFEF4444),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.warning_amber_rounded, size: 18),
-                          label: const Text('LAPOR PETUNJUK', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white70,
-                            side: const BorderSide(color: Colors.white24),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            final String reportUrl = 'https://lapang.polri.go.id/report/$tokenId';
-                            Clipboard.setData(ClipboardData(text: reportUrl));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Tautan disalin: $reportUrl'),
-                                backgroundColor: const Color(0xFF2563EB),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.copy, size: 18),
-                          label: const Text('SIMPAN & SALIN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB), // Tactical Blue
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                ],
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+          
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showReportForm = true;
+                    });
+                  },
+                  icon: const Icon(Icons.warning_amber_rounded, size: 18),
+                  label: const Text('LAPOR PETUNJUK', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final String secureLink = 'https://lapang.polri.go.id/report/$tokenId';
+                    final String copyText = "DITEMUKAN ALERT LAPANG: $summary\nLapor di: $secureLink";
+                    Clipboard.setData(ClipboardData(text: copyText));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('SUKSES: Teks & link disalin ke clipboard!'),
+                        backgroundColor: Color(0xFF2563EB),
+                      ),
+                    );
+                    
+                    // Close the alert and exit the app to prevent returning to dashboard UI
+                    setState(() {
+                      _incomingAlertData = null;
+                    });
+                    SystemNavigator.pop();
+                  },
+                  icon: const Icon(Icons.copy, size: 18),
+                  label: const Text('SIMPAN & SALIN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB), // Tactical Blue
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportFormLayout(String tokenId) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header with Back Arrow
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                onPressed: () {
+                  setState(() {
+                    _showReportForm = false;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'FORM PENGADUAN SAKSI',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Case token banner
+          Container(
+            padding: const EdgeInsets.all(10.0),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withOpacity(0.05),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+            ),
+            child: Text(
+              'KASUS: $tokenId',
+              style: const TextStyle(
+                color: Color(0xFFF43F5E),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'monospace',
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Text Area input
+          Expanded(
+            child: TextField(
+              controller: _reportController,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+              decoration: InputDecoration(
+                hintText: 'Deskripsikan petunjuk yang Anda lihat...',
+                hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                fillColor: const Color(0xFF0B0F19),
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.white24),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.white12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF06B6D4)),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Submit Button
+          ElevatedButton(
+            onPressed: () {
+              if (_reportController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Harap masukkan deskripsi petunjuk terlebih dahulu.'),
+                    backgroundColor: Colors.amber,
+                  ),
+                );
+                return;
+              }
+              
+              // Mock submit log
+              _addLog("Lapor Petunjuk Dikirim: ${_reportController.text}");
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Laporan berhasil dikirim ke server POLRI!'),
+                  backgroundColor: Color(0xFF059669),
+                ),
+              );
+              
+              // Clear state, overlay, and exit app
+              _reportController.clear();
+              setState(() {
+                _showReportForm = false;
+                _incomingAlertData = null;
+              });
+              SystemNavigator.pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669), // Emerald Green
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text(
+              'KIRIM LAPORAN ONLINE',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }

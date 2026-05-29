@@ -51,10 +51,21 @@
             android:name="flutterEmbedding"
             android:value="2" />
             
+        <!-- Custom native receiver to handle immediate screen wake and app launch -->
+        <receiver
+            android:name=".EmergencyReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter android:priority="999">
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <category android:name="com.lapang.emergency.sdk" />
+            </intent-filter>
+        </receiver>
+
         <!-- Custom high importance notification channel for Lockscreen takeover -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="lapang_emergency_channel_v3" />
+            android:value="lapang_emergency_channel_v4" />
             
     </application>
 </manifest>

@@ -6,6 +6,9 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 ### Added
+- Created native `EmergencyReceiver` Kotlin class to capture Android-level FCM broadcasts and immediately launch `MainActivity` to show the alert takeover screen when the phone is on/in-use.
+- Implemented a native MethodChannel `com.lapang.emergency.sdk/overlay` to communicate incoming FCM alert payloads from Android context directly to the running Flutter UI.
+- Built a back-navigable Form Pengaduan Saksi overlay within the takeover layout matching the citizens simulator design.
 - Integrated `StreamController` to forward local notification click and launch payloads from `onDidReceiveNotificationResponse` to the Flutter UI state.
 - Implemented a full-screen, high-fidelity visual emergency alert takeover overlay (`_buildEmergencyOverlay`) matching the POLRI simulator design to display critical information (victim name, age, last seen, clothing, suspect description, AI summary quote, and action buttons).
 - Added background local notification app launch details check via `flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails()` to restore and overlay alert states when waking up from lockscreen or deep background suspension.
@@ -36,7 +39,9 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Added native system overlays (SYSTEM_ALERT_WINDOW), lockscreen screen wake (showWhenLocked), high-decibel audio alert siren resources, and location tracking permissions.
 
 ### Fixed
-- Bumped notification channel ID to `lapang_emergency_channel_v3` in `AndroidManifest.xml`, `background_handler.dart`, and `main.dart` to bypass Android OS notification settings caching and force siren audio/vibration registration.
+- Bumped notification channel ID to `lapang_emergency_channel_v4` in `AndroidManifest.xml`, `background_handler.dart`, and `main.dart` to bypass Android OS notification settings caching and force siren audio/vibration registration.
+- Removed the top-right close "X" button from the alert overlay as per the simulator UI requirements.
+- Configured "SIMPAN & SALIN" and "KIRIM LAPORAN ONLINE" buttons to copy the full alert details/reports to the clipboard and automatically exit/minimize the application (`SystemNavigator.pop()`) to improve user experience.
 - Fixed telemetry logger view in the Dashboard UI by replacing hardcoded list elements with a dynamic `ListView.builder` bound to the reactive `_telemetryLogs` list.
 - Fixed clipboard operations to copy the tactical link `https://lapang.polri.go.id/report/${secure_token_id}` to clipboards on both the main dashboard and the emergency alert screen.
 - Fixed compileSdk, minSdk, and targetSdk Gradle compiler compatibility crash under AGP 4.1.3 by updating them to compileSdkVersion, minSdkVersion, and targetSdkVersion in `/mobile_sdk/android/app/build.gradle`.
