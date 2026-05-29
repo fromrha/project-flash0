@@ -27,6 +27,10 @@ export async function POST(request: Request) {
         latitude_tkp: String(alert.incident_info?.geo_coordinates?.latitude || -6.2088),
         longitude_tkp: String(alert.incident_info?.geo_coordinates?.longitude || 106.8456),
         radius_km: String((radius || 2000) / 1000),
+        victim_clothing: alert.victim_info?.last_clothing || "Pakaian tidak didetailkan",
+        suspect_description: alert.incident_info?.suspect_description || "Mencari petunjuk kendaraan...",
+        ai_summary: alert.ai_summary || "SIAGA 1: Penculikan Anak!",
+        secure_token_id: alert.secure_token_id || ""
       },
     };
 

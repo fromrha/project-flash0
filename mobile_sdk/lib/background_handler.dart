@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
@@ -114,7 +115,7 @@ Future<void> triggerEmergencyBroadcaster(RemoteMessage message) async {
 
   // Android specific details for heads-up, lockscreen takeover, and siren playing
   final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-    'lapang_emergency_channel', // Channel ID
+    'lapang_emergency_channel_v3', // Channel ID
     'Siaran Siaga Darurat LAPANG', // Channel Name
     channelDescription: 'Pemberitahuan darurat penculikan anak berkecepatan tinggi',
     importance: Importance.max,
@@ -144,6 +145,6 @@ Future<void> triggerEmergencyBroadcaster(RemoteMessage message) async {
     'SIAGA 1: PENCULIKAN ANAK!',
     'PENCULIKAN BARU: $victimName ($victimAge th) dekat $incidentLocation. Bantu pencarian secepatnya!',
     notificationDetails,
-    payload: data['token'],
+    payload: jsonEncode(data),
   );
 }

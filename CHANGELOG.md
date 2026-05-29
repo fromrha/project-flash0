@@ -6,6 +6,9 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 ### Added
+- Integrated `StreamController` to forward local notification click and launch payloads from `onDidReceiveNotificationResponse` to the Flutter UI state.
+- Implemented a full-screen, high-fidelity visual emergency alert takeover overlay (`_buildEmergencyOverlay`) matching the POLRI simulator design to display critical information (victim name, age, last seen, clothing, suspect description, AI summary quote, and action buttons).
+- Added background local notification app launch details check via `flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails()` to restore and overlay alert states when waking up from lockscreen or deep background suspension.
 - Initial project brief and technical blueprint mapping.
 - Changelog initialized for project tracking.
 - Bootstrapped Next.js App Router workspace with TypeScript and Tailwind CSS v4.
@@ -33,6 +36,9 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Added native system overlays (SYSTEM_ALERT_WINDOW), lockscreen screen wake (showWhenLocked), high-decibel audio alert siren resources, and location tracking permissions.
 
 ### Fixed
+- Bumped notification channel ID to `lapang_emergency_channel_v3` in `AndroidManifest.xml`, `background_handler.dart`, and `main.dart` to bypass Android OS notification settings caching and force siren audio/vibration registration.
+- Fixed telemetry logger view in the Dashboard UI by replacing hardcoded list elements with a dynamic `ListView.builder` bound to the reactive `_telemetryLogs` list.
+- Fixed clipboard operations to copy the tactical link `https://lapang.polri.go.id/report/${secure_token_id}` to clipboards on both the main dashboard and the emergency alert screen.
 - Fixed compileSdk, minSdk, and targetSdk Gradle compiler compatibility crash under AGP 4.1.3 by updating them to compileSdkVersion, minSdkVersion, and targetSdkVersion in `/mobile_sdk/android/app/build.gradle`.
 - Updated buildscript ext.kotlin_version to '1.8.20' in `/mobile_sdk/android/build.gradle` for stability and Java 8 JVM compatibility.
 - Fixed Firestore transaction freeze when offline by migrating to fire-and-forget `setDoc` promises.
