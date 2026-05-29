@@ -23,6 +23,22 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     
     final Map<String, dynamic> data = message.data;
     
+    // Strict Timestamp Validation Barrier: 10 seconds threshold
+    if (data.containsKey('created_at')) {
+      final String createdAtStr = data['created_at'];
+      try {
+        final DateTime createdAtTime = DateTime.parse(createdAtStr);
+        final DateTime nowTime = DateTime.now();
+        final int diffMs = nowTime.difference(createdAtTime).inMilliseconds.abs();
+        if (diffMs > 10000) {
+          print("[LAPANG Background SDK] Data Historis Diarsip secara Senyap (selisih > 10s): $createdAtStr");
+          return;
+        }
+      } catch (e) {
+        print("[WARN] Gagal memvalidasi timestamp created_at: $e");
+      }
+    }
+    
     // Extract coordinate parameters from Next.js Dashboard payload
     if (data.containsKey('latitude_tkp') &&
         data.containsKey('longitude_tkp') &&
@@ -133,6 +149,7 @@ Future<void> triggerEmergencyBroadcaster(RemoteMessage message) async {
     enableVibration: true,
     
     category: AndroidNotificationCategory.alarm,
+    audioAttributesUsage: AudioAttributesUsage.alarm,
     visibility: NotificationVisibility.public,
   );
 

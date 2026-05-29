@@ -30,6 +30,7 @@ export default function SimulatorPage() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [reportText, setReportText] = useState("");
+  const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
 
   // Check initial permission
   useEffect(() => {
@@ -300,88 +301,26 @@ export default function SimulatorPage() {
           {/* Header Title */}
           <div className="text-center py-2 flex flex-col items-center">
             <div className="h-10 w-10 bg-primary-trust/20 border border-cyan-beacon/30 rounded-full flex items-center justify-center mb-2">
-              <Smartphone className="text-cyan-beacon h-5 w-5 animate-pulse" />
+              <Radio className="text-cyan-beacon h-5 w-5 animate-pulse" />
             </div>
-            <h1 className="text-sm font-bold font-mono tracking-wider text-slate-100 uppercase">SIMULATOR PERANGKAT WARGA</h1>
-            <p className="text-[9px] text-tactical-gray font-mono mt-1">APLIKASI PEMANTAUAN DOKET DARURAT BENCANA // FLASHzero SDK</p>
+            <h1 className="text-xs font-bold font-mono tracking-wider text-slate-100 uppercase">SISTEM INTERUPSI DARURAT KLIEN: AKTIF</h1>
+            <p className="text-[9px] text-tactical-gray font-mono mt-1">SIAGA PENYIARAN DARURAT BENCANA // FLASHzero SDK</p>
           </div>
 
-          {/* SECTION 1: PERMISSION & REGISTRATION TRIGGER */}
-          <section className="tactical-glass p-4 rounded-xl border-cyan-beacon/20 flex flex-col gap-3">
-            <div className="flex justify-between items-center text-[10px] font-mono border-b border-tactical-slate/30 pb-2">
-              <span className="text-cyan-beacon font-bold flex items-center gap-1">
-                <Bell className="h-3.5 w-3.5" /> STATUS IZIN OS
-              </span>
-              <span className={`px-2 py-0.5 rounded text-[8px] uppercase border ${
-                permission === "granted" 
-                  ? "bg-tactical-emerald/10 border-tactical-emerald text-emerald-400"
-                  : permission === "denied"
-                  ? "bg-tactical-rose/10 border-tactical-rose text-rose-400"
-                  : "bg-zinc-950 text-zinc-400 border-zinc-800"
-              }`}>
-                {permission}
-              </span>
+          {/* Standby Radar Animation */}
+          {!simulatedIncomingAlert && (
+            <div className="flex-1 flex flex-col items-center justify-center py-14 text-center space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-cyan-beacon/20 animate-ping"></div>
+                <div className="relative h-16 w-16 bg-slate-950 border border-cyan-beacon/40 rounded-full flex items-center justify-center tactical-glow-blue">
+                  <Radio className="text-cyan-beacon h-8 w-8 animate-pulse" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-emerald-400 font-mono tracking-widest uppercase">MEMANDU GELOMBANG SIAGA</p>
+                <p className="text-[8px] text-tactical-gray font-mono uppercase">MENUNGGU SIGNAL DARI PUSAT KOMANDO POLRI</p>
+              </div>
             </div>
-
-            <p className="text-[10px] text-slate-350 leading-relaxed font-mono">
-              Untuk mensimulasikan lockscreen take-over berkecepatan tinggi, perangkat membutuhkan izin notifikasi sistem penuh.
-            </p>
-
-            <button
-              onClick={handleRequestPermission}
-              disabled={isRegistering}
-              className={`w-full py-2.5 rounded font-mono text-xs font-bold uppercase tracking-wider cursor-pointer border transition-all flex items-center justify-center gap-2 ${
-                permission === "granted"
-                  ? "bg-primary-trust/10 border-cyan-beacon/50 text-cyan-beacon hover:bg-primary-trust/20"
-                  : "bg-electric-alert text-white border-electric-alert hover:bg-electric-alert/80 hover:shadow-lg hover:shadow-electric-alert/20"
-              }`}
-            >
-              {isRegistering ? (
-                <>
-                  <RotateCw className="h-4.5 w-4.5 animate-spin" />
-                  <span>MENGHUBUNGKAN...</span>
-                </>
-              ) : (
-                <>
-                  <ShieldAlert className="h-4.5 w-4.5" />
-                  <span>AKTIFKAN SIMULATOR OS PERANGKAT</span>
-                </>
-              )}
-            </button>
-          </section>
-
-          {/* SECTION 2: DEVICE REGISTERED TOKEN DISPLAY */}
-          {fcmToken && (
-            <section className="tactical-glass p-4 rounded-xl relative border-emerald-500/20">
-              <div className="absolute top-0 right-0 h-[2px] w-full bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-40"></div>
-              <div className="flex justify-between items-center text-[10px] font-mono border-b border-tactical-slate/30 pb-2 mb-2.5">
-                <span className="text-emerald-400 font-bold flex items-center gap-1">
-                  <Cpu className="h-3.5 w-3.5" /> TOKEN REGISTRASI ALAT (FCM)
-                </span>
-                <span className="text-[8px] text-emerald-400 uppercase">Terdaftar</span>
-              </div>
-
-              <div className="bg-tactical-black border border-tactical-slate p-2.5 rounded text-[9px] font-mono text-slate-300 break-all leading-normal">
-                {fcmToken}
-              </div>
-
-              <button
-                onClick={copyTokenToClipboard}
-                className="w-full mt-2.5 py-1.5 rounded bg-tactical-slate/30 border border-tactical-slate hover:bg-tactical-slate/60 hover:text-white text-slate-300 text-[10px] font-mono font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    <span className="text-emerald-400">TOKEN BERHASIL DISALIN!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5" />
-                    <span>SALIN TOKEN REGISTRASI</span>
-                  </>
-                )}
-              </button>
-            </section>
           )}
 
           {/* SECTION 3: SIMULATED INCOMING SCREEN OVERLAY INTENT */}
@@ -395,7 +334,7 @@ export default function SimulatorPage() {
                 </div>
                 
                 <h2 className="text-lg font-bold text-rose-500 uppercase tracking-widest animate-pulse">SIAGA 1: PENCULIKAN ANAK</h2>
-                <p className="text-[10px] text-rose-400 uppercase mt-1 tracking-wider">DARURAT PUSH-ALERT INTENT DILEPAS</p>
+                <p className="text-[10px] text-rose-400 uppercase mt-1 tracking-wider">PERINGATAN DITERIMA: AREA RADIUS SIAGA 1</p>
 
                 {/* Victim Details card */}
                 <div className="w-full bg-zinc-950 border border-rose-500/30 p-4 rounded-xl mt-6 space-y-3 text-left">
@@ -504,19 +443,6 @@ export default function SimulatorPage() {
               </div>
             </div>
           )}
-
-          {/* SECTION 4: REAL-TIME DEVICE CONSOLE LOGS */}
-          <section className="tactical-glass p-4 rounded-xl flex-1 flex flex-col">
-            <span className="text-[10px] font-mono text-tactical-gray border-b border-tactical-slate/30 pb-2 mb-2 flex items-center gap-1 uppercase">
-              <Radio className="h-3.5 w-3.5 text-cyan-beacon" /> Logger Telemetri OS Perangkat
-            </span>
-            <div className="flex-1 bg-tactical-black/60 border border-tactical-slate p-2 rounded text-[8px] font-mono text-slate-400 overflow-y-auto space-y-1 h-36">
-              {deviceLogs.map((log, idx) => (
-                <div key={idx} className="truncate">{log}</div>
-              ))}
-            </div>
-          </section>
-
         </div>
 
         {/* Mobile Screen Navigation bar indicator */}
@@ -524,6 +450,73 @@ export default function SimulatorPage() {
           <div className="w-24 h-1 bg-zinc-700 rounded-full"></div>
         </div>
 
+      </div>
+
+      {/* Collapsible Telemetry Panel */}
+      <div className="w-full max-w-md mt-6 z-10 bg-slate-950/80 border border-tactical-slate rounded-xl p-4 font-mono">
+        <button 
+          onClick={() => setIsTelemetryOpen(!isTelemetryOpen)}
+          className="w-full flex justify-between items-center text-xs font-bold text-cyan-beacon hover:text-white uppercase tracking-wider cursor-pointer"
+        >
+          <span>[LOG TELEMETRI KLIEN]</span>
+          <span>{isTelemetryOpen ? "TUTUP ▼" : "BUKA ▲"}</span>
+        </button>
+        {isTelemetryOpen && (
+          <div className="mt-4 space-y-4 border-t border-tactical-slate/30 pt-4 animate-fade-in">
+            {/* Permission Check */}
+            <div className="tactical-glass p-3 rounded-lg border-tactical-slate/40 flex flex-col gap-2">
+              <div className="flex justify-between items-center text-[10px] font-bold text-slate-200">
+                <span className="flex items-center gap-1"><Bell className="h-3.5 w-3.5 text-cyan-beacon" /> STATUS IZIN OS</span>
+                <span className={`px-2 py-0.5 rounded text-[8px] uppercase border ${
+                  permission === "granted" 
+                    ? "bg-tactical-emerald/10 border-tactical-emerald text-emerald-400"
+                    : permission === "denied"
+                    ? "bg-tactical-rose/10 border-tactical-rose text-rose-400"
+                    : "bg-zinc-950 text-zinc-400 border-zinc-800"
+                }`}>{permission}</span>
+              </div>
+              <button
+                onClick={handleRequestPermission}
+                disabled={isRegistering}
+                className="w-full py-2 bg-primary-trust/10 border border-cyan-beacon/30 hover:bg-primary-trust/20 text-cyan-beacon text-[10px] font-bold rounded cursor-pointer transition-all"
+              >
+                AKTIFKAN MOCK NOTIFIKASI SISTEM
+              </button>
+            </div>
+
+            {/* Token details */}
+            {fcmToken && (
+              <div className="tactical-glass p-3 rounded-lg border-tactical-slate/40 space-y-2">
+                <div className="text-[10px] font-bold text-emerald-400 flex justify-between items-center">
+                  <span>FCM SERVICE TOKEN</span>
+                  <span className="text-[8px] uppercase">ACTIVE</span>
+                </div>
+                <div className="bg-tactical-black/80 border border-tactical-slate p-2 rounded text-[8px] text-slate-350 break-all leading-normal">
+                  {fcmToken}
+                </div>
+                <button
+                  onClick={copyTokenToClipboard}
+                  className="w-full py-1.5 bg-tactical-slate/20 hover:bg-tactical-slate/40 text-slate-300 text-[9px] font-bold rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+                >
+                  {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  <span>{copied ? "TOKEN BERHASIL DISALIN!" : "SALIN TOKEN REGISTRASI"}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Device Logger */}
+            <div className="tactical-glass p-3 rounded-lg border-tactical-slate/40 flex flex-col h-44">
+              <div className="text-[10px] font-bold text-cyan-beacon mb-2 uppercase flex items-center gap-1">
+                <Radio className="h-3.5 w-3.5" /> Logger Telemetri Aktivitas
+              </div>
+              <div className="flex-1 bg-tactical-black/80 border border-tactical-slate p-2 rounded text-[8px] text-slate-400 overflow-y-auto space-y-1">
+                {deviceLogs.map((log, idx) => (
+                  <div key={idx} className="truncate">{log}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
     </main>

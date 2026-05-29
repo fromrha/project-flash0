@@ -57,6 +57,8 @@ void main() async {
       playSound: true,
       sound: RawResourceAndroidNotificationSound('siren'),
       enableVibration: true,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      audioStreamType: AndroidAudioStreamType.alarm,
     );
 
     await flutterLocalNotificationsPlugin
@@ -335,17 +337,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: const Color(0xFF06B6D4).withOpacity(0.3)),
                       ),
-                      child: const Icon(
-                        Icons.security,
-                        color: Color(0xFF06B6D4),
-                        size: 32,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: CustomPaint(
+                          painter: LapangLogomarkPainter(
+                            color: const Color(0xFF06B6D4),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   const Center(
                     child: Text(
-                      'STATUS PERANGKAT SIMULATOR WARGA',
+                      'SISTEM INTERUPSI DARURAT KLIEN: AKTIF',
                       style: TextStyle(fontSize: 10, color: Colors.grey),
                     ),
                   ),
@@ -535,7 +540,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'DARURAT PUSH-ALERT INTENT DILEPAS',
+                'PERINGATAN DITERIMA: AREA RADIUS SIAGA 1',
                 style: TextStyle(
                   color: Colors.white38,
                   fontSize: 10,
@@ -916,3 +921,104 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
+
+class LapangLogomarkPainter extends CustomPainter {
+  final Color color;
+
+  LapangLogomarkPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final scaleX = size.width / 365.0;
+    final scaleY = size.height / 364.0;
+
+    canvas.save();
+    canvas.scale(scaleX, scaleY);
+
+    final path1 = Path()
+      ..moveTo(63.1958, 132.105)
+      ..cubicTo(63.8218, 115.344, 65.133, 98.5581, 64.8141, 81.82)
+      ..cubicTo(64.6133, 70.906, 67.1765, 65.4371, 79.2015, 66.8221)
+      ..cubicTo(98.9989, 69.0948, 112.394, 60.1221, 123.805, 43.7983)
+      ..cubicTo(148.941, 7.85997, 185.37, -3.03043, 228.533, 0.68651)
+      ..lineTo(228.533, 64.9399)
+      ..cubicTo(224.505, 65.295, 220.76, 66.1473, 217.098, 65.8514)
+      ..cubicTo(196.793, 64.206, 183.043, 72.7881, 171.219, 89.5617)
+      ..cubicTo(144.783, 127.074, 106.5, 137.101, 62.8178, 131.703)
+      ..lineTo(63.2076, 132.093)
+      ..lineTo(63.1958, 132.105)
+      ..close();
+    canvas.drawPath(path1, paint);
+
+    final path2 = Path()
+      ..moveTo(301.698, 232.475)
+      ..cubicTo(301.084, 249.722, 299.985, 266.969, 300.068, 284.204)
+      ..cubicTo(300.115, 293.52, 297.209, 297.568, 287.665, 296.657)
+      ..cubicTo(266.934, 294.692, 252.535, 303.392, 240.617, 320.829)
+      ..cubicTo(217.618, 354.471, 173.275, 370.842, 136.267, 361.325)
+      ..lineTo(136.267, 298.906)
+      ..cubicTo(140.153, 298.527, 143.425, 297.663, 146.579, 297.983)
+      ..cubicTo(168.089, 300.137, 182.181, 290.584, 194.785, 273.136)
+      ..cubicTo(221.15, 236.641, 258.748, 226.165, 302.029, 232.841)
+      ..lineTo(301.686, 232.475)
+      ..close();
+    canvas.drawPath(path2, paint);
+
+    final path3 = Path()
+      ..moveTo(302.029, 232.842)
+      ..cubicTo(304.332, 199.519, 286.247, 179.1, 261.879, 158.763)
+      ..cubicTo(234.557, 135.964, 229.926, 102.18, 233.848, 66.822)
+      ..lineTo(297.067, 66.822)
+      ..cubicTo(297.493, 70.03, 298.39, 72.8117, 298.131, 75.4752)
+      ..cubicTo(295.886, 98.0136, 305.49, 113.071, 323.905, 126.281)
+      ..cubicTo(358.503, 151.092, 368.874, 187.126, 363.76, 232.392)
+      ..lineTo(301.651, 232.427)
+      ..lineTo(302.017, 232.83)
+      ..close();
+    canvas.drawPath(path3, paint);
+
+    final path4 = Path()
+      ..moveTo(62.8178, 131.715)
+      ..cubicTo(60.9751, 164.421, 78.7171, 184.509, 102.779, 204.491)
+      ..cubicTo(130.242, 227.313, 135.121, 261.121, 130.549, 296.811)
+      ..lineTo(68.0743, 296.811)
+      ..cubicTo(67.6254, 292.845, 66.7395, 289.566, 66.9639, 286.358)
+      ..cubicTo(68.405, 265.667, 60.29, 251.154, 42.9259, 238.914)
+      ..cubicTo(7.13462, 213.7, -4.20518, 177.371, 1.33478, 132.176)
+      ..lineTo(63.243, 132.141)
+      ..lineTo(62.8296, 131.715)
+      ..close();
+    canvas.drawPath(path4, paint);
+
+    final path5 = Path()
+      ..moveTo(190.367, 139.835)
+      ..lineTo(204.707, 121.345)
+      ..cubicTo(205.558, 120.244, 207.318, 120.966, 207.152, 122.351)
+      ..lineTo(204.483, 145.612)
+      ..cubicTo(202.486, 163.025, 209.692, 180.213, 223.5, 190.961)
+      ..lineTo(241.951, 205.331)
+      ..cubicTo(243.05, 206.184, 242.329, 207.948, 240.947, 207.782)
+      ..lineTo(217.736, 205.107)
+      ..cubicTo(200.36, 203.106, 183.209, 210.327, 172.483, 224.165)
+      ..lineTo(158.143, 242.655)
+      ..cubicTo(157.293, 243.756, 155.533, 243.034, 155.698, 241.649)
+      ..lineTo(158.367, 218.388)
+      ..cubicTo(160.364, 200.975, 153.158, 183.787, 139.35, 173.039)
+      ..lineTo(120.899, 158.668)
+      ..cubicTo(119.8, 157.816, 120.521, 156.052, 121.903, 156.218)
+      ..lineTo(145.114, 158.893)
+      ..cubicTo(162.49, 160.894, 179.641, 153.673, 190.367, 139.835)
+      ..close();
+    canvas.drawPath(path5, paint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+

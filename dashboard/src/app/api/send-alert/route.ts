@@ -30,7 +30,8 @@ export async function POST(request: Request) {
         victim_clothing: alert.victim_info?.last_clothing || "Pakaian tidak didetailkan",
         suspect_description: alert.incident_info?.suspect_description || "Mencari petunjuk kendaraan...",
         ai_summary: alert.ai_summary || "SIAGA 1: Penculikan Anak!",
-        secure_token_id: alert.secure_token_id || ""
+        secure_token_id: alert.secure_token_id || "",
+        created_at: alert.timestamps?.created_at || new Date().toISOString()
       },
     };
 

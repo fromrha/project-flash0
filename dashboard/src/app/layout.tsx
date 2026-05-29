@@ -36,6 +36,9 @@ export const metadata: Metadata = {
     description: "Waspada Bersama, Selamatkan Segera.",
     images: ["/banner.jpg"],
   },
+  icons: {
+    icon: "/lapang-logomark-white.svg",
+  },
 };
 
 export default function RootLayout({

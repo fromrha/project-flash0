@@ -354,8 +354,9 @@ export default function Page() {
             <ShieldAlert className="text-cyan-beacon h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-wider font-mono flex items-center gap-2 text-slate-100">
-              LAPANG <span className="text-xs bg-primary-trust/60 text-cyan-beacon border border-cyan-beacon/30 px-2 py-0.5 rounded font-sans uppercase">POLRI COMMAND CONSOLE</span>
+            <h1 className="text-xl font-bold tracking-wider font-mono flex items-center gap-3 text-slate-100">
+              <img src="/lapang-logo-white-loc1.svg" alt="LAPANG Logo" className="h-8 w-auto" />
+              <span className="text-xs bg-primary-trust/60 text-cyan-beacon border border-cyan-beacon/30 px-2 py-0.5 rounded font-sans uppercase">POLRI COMMAND CONSOLE</span>
             </h1>
             <p className="text-xs text-tactical-gray font-mono">DOKET PUSAT PENYIARAN DARURAT // INTEGRASI NATIVE FIREBASE REAL</p>
           </div>
@@ -695,7 +696,7 @@ export default function Page() {
                       MENGIRIM SIARAN...
                     </span>
                   ) : (
-                    "SIARKAN PERINGATAN DARURAT HIGHEST PRIORITY FCM"
+                    "LANCARKAN SIARAN NASIONAL PERINGATAN DINI"
                   )}
                 </button>
               </div>
