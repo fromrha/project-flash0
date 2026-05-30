@@ -4,7 +4,22 @@ All notable changes to this project will be documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Versioning follows [Semantic Versioning](https://semver.org/)
 
-## [Unreleased]
+## [v0.3.0] - 2026-05-30
+### Added
+- Overhauled Tab Tentang: removed all box wrappers, borders, and rigid backgrounds for content. Extended typography and scrollable layouts.
+- Dynamic Mobile Banner: Integrated the high-definition `gdc-jvc-mobile-banner.jpg` asset directly at the top of the Flutter client.
+- Google Vibe Coding Event Direct Links: Configured direct launch action using `url_launcher` on Flutter and simple hyperlinks on web.
+- Material Symbols Outlined stylesheet integration on Web and `flutter_svg` package on mobile client.
+- Google Material Symbol `zone_person_urgent` as primary alert card icon.
+- Balanced vertical centering layout: dynamically centers the standby radar using flex/Expanded column spacers.
+- Indonesian translation for Side Navigation Drawer footers (Waktu Server and Koordinat Sekarang).
+- Unified Android App Name: standard compilation target changed to `LAPANG` in Android manifest.
+
+### Changed
+- Bushed version globally to `v0.3.0`.
+- Corrected creator credits to "Rahman Hanafi".
+
+## [v0.2.0] - 2026-05-29
 ### Added
 - Created 80%-width Side Navigation Drawer overlays on both Next.js Web Simulator and Flutter Standalone Client, containing identical tabs (Beranda, Sistem Telemetri, Cara Kerja, Lisensi Kode, Tentang & Kontes).
 - Embedded live real-time clock stream and current GPS coordinates in Drawer Footers.

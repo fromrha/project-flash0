@@ -517,7 +517,8 @@ export default function SimulatorPage() {
                   </div>
                 </div>
               </div>
-            )}            {activeTab === "how-it-works" && (
+            )}
+            {activeTab === "how-it-works" && (
               <div className="flex-1 flex flex-col space-y-4">
                 <div className="border-b border-zinc-800 pb-2">
                   <h2 className="text-sm font-bold text-cyan-400 font-mono uppercase">Cara Kerja Geofencing</h2>
@@ -763,8 +764,8 @@ export default function SimulatorPage() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Drawer Header */}
-              <div className="p-4 border-b border-zinc-850 flex justify-between items-center bg-slate-950/40">
-                <img src="/lapang-logo-white-loc1.svg" className="h-6 object-contain" alt="LAPANG" />
+              <div className="p-4 flex justify-between items-center bg-transparent">
+                <img src="/lapang-logo-white-loc1.svg" className="h-6 object-contain opacity-85" alt="LAPANG" />
                 <button 
                   onClick={() => setIsDrawerOpen(false)}
                   className="text-zinc-400 hover:text-white p-1 hover:bg-zinc-800 rounded transition-colors"
@@ -805,7 +806,9 @@ export default function SimulatorPage() {
               </div>
 
               {/* Drawer Footer */}
-              <div className="p-4 border-t border-zinc-850 bg-slate-950/40 space-y-1 text-[8px] text-zinc-500 font-mono">
+              <div className="p-4 bg-transparent space-y-1 text-[8px] text-zinc-500 font-mono">
+                <div>VERSI APLIKASI:</div>
+                <div className="text-zinc-350 font-bold mb-1.5">v0.3.0</div>
                 <div>WAKTU SERVER:</div>
                 <div className="text-zinc-350 font-bold mb-1.5">{currentTime || "00:00:00"}</div>
                 <div>KOORDINAT SEKARANG:</div>

@@ -2,7 +2,7 @@ name: com.lapang.emergency.sdk
 description: "Platform Client Standalone Android SDK LAPANG - Command Push Alert Geofencing Receiver"
 publish_to: 'none'
 
-version: 0.1.0+1
+version: 0.3.0
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -19,6 +19,8 @@ dependencies:
   geolocator: ^12.0.0
   geocoding: ^3.0.0
   flutter_svg: ^2.0.10
+  url_launcher: ^6.2.6
+
 
 
 dev_dependencies:
@@ -28,7 +30,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/gdc-jvc-mobile-banner.jpg
+    - assets/lapang-logo-white-loc1.svg
 
-  # Asset assets (uncomment to bundle raw alert audio)
-  # assets:
-  #   - assets/sounds/siren.mp3
