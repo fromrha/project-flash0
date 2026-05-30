@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -10,6 +12,43 @@ import 'package:geolocator/geolocator.dart';
 // Global reference for native notifications
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
+
+Future<File> _getProcessedCasesFile() async {
+  final String path = Platform.isAndroid 
+      ? '/data/data/com.lapang.emergency.sdk/files' 
+      : Directory.systemTemp.path;
+  final dir = Directory(path);
+  if (!await dir.exists()) {
+    await dir.create(recursive: true);
+  }
+  return File('${dir.path}/processed_cases.txt');
+}
+
+Future<bool> isCaseAlreadyProcessed(String caseId) async {
+  if (caseId.isEmpty) return false;
+  try {
+    final file = await _getProcessedCasesFile();
+    if (!await file.exists()) {
+      return false;
+    }
+    final content = await file.readAsString();
+    final List<String> processed = content.split('\n');
+    return processed.contains(caseId);
+  } catch (e) {
+    print("[LAPANG SDK] Error reading processed cases cache: $e");
+    return false;
+  }
+}
+
+Future<void> markCaseAsProcessed(String caseId) async {
+  if (caseId.isEmpty) return;
+  try {
+    final file = await _getProcessedCasesFile();
+    await file.writeAsString('$caseId\n', mode: FileMode.append);
+  } catch (e) {
+    print("[LAPANG SDK] Error writing processed cases cache: $e");
+  }
+}
 
 /// Top-Level Service Worker Background Message Handler
 /// Runs in a dedicated background isolate even when app is suspended or killed
@@ -22,6 +61,16 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print("[LAPANG Background SDK] Sinyal FCM Diterima: ${message.messageId}");
     
     final Map<String, dynamic> data = message.data;
+    final String tokenId = data['secure_token_id'] ?? data['victim_name'] ?? '';
+    
+    // Strict duplication barrier
+    if (tokenId.isNotEmpty) {
+      if (await isCaseAlreadyProcessed(tokenId)) {
+        print("[LAPANG Background SDK] Abaikan Replay Kasus (Ghost Notification): $tokenId");
+        return;
+      }
+      await markCaseAsProcessed(tokenId);
+    }
     
     // Strict Timestamp Validation Barrier: 10 seconds threshold
     if (data.containsKey('created_at')) {
@@ -129,9 +178,22 @@ Future<void> triggerEmergencyBroadcaster(RemoteMessage message) async {
   final String victimAge = data['victim_age'] ?? 'Balita';
   final String incidentLocation = data['incident_location'] ?? 'Lokasi Terdekat';
 
+  bool isNativeSirenPlaying = false;
+  try {
+    isNativeSirenPlaying = await const MethodChannel('com.lapang.emergency.sdk/overlay')
+        .invokeMethod<bool>('isSirenPlaying') ?? false;
+  } catch (e) {
+    print("[LAPANG Background SDK] Error checking native siren status: $e");
+  }
+
+  // Choose the channel based on whether native siren is already playing
+  final String channelId = isNativeSirenPlaying 
+      ? 'lapang_emergency_channel_silent' 
+      : 'lapang_emergency_channel_v4';
+
   // Android specific details for heads-up, lockscreen takeover, and siren playing
   final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-    'lapang_emergency_channel_v4', // Channel ID
+    channelId, // Channel ID
     'Siaran Siaga Darurat LAPANG', // Channel Name
     channelDescription: 'Pemberitahuan darurat penculikan anak berkecepatan tinggi',
     importance: Importance.max,
@@ -141,8 +203,8 @@ Future<void> triggerEmergencyBroadcaster(RemoteMessage message) async {
     fullScreenIntent: true,
     
     // Play custom alert sound siren.mp3 (placed in android/app/src/main/res/raw/siren.mp3)
-    sound: const RawResourceAndroidNotificationSound('siren'),
-    playSound: true,
+    sound: isNativeSirenPlaying ? null : const RawResourceAndroidNotificationSound('siren'),
+    playSound: !isNativeSirenPlaying,
     
     // Extreme vibration pattern to alert user
     vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1500]),

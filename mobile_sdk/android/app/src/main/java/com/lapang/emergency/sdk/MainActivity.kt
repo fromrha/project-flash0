@@ -16,12 +16,42 @@ class MainActivity: FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode = 
+                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
         handleIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
+    }
+
+    private fun setLockscreenFlags() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
+        }
+    }
+
+    private fun clearLockscreenFlags() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(false)
+            setTurnScreenOn(false)
+        } else {
+            @Suppress("DEPRECATION")
+            window.clearFlags(
+                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
+        }
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -31,6 +61,7 @@ class MainActivity: FlutterActivity() {
             // Clear the extra to prevent reprocessing on subsequent manual launches
             intent.removeExtra("alert_data")
             
+            setLockscreenFlags()
             // Play the alarm sound immediately
             startSiren()
             
@@ -48,8 +79,25 @@ class MainActivity: FlutterActivity() {
                         result.success(pendingAlertData)
                         pendingAlertData = null // clear after reading
                     }
+                    "startSiren" -> {
+                        startSiren()
+                        result.success(true)
+                    }
                     "stopSiren" -> {
                         stopSiren()
+                        result.success(true)
+                    }
+                    "isSirenPlaying" -> {
+                        result.success(isSirenPlaying)
+                    }
+                    "moveTaskToBack" -> {
+                        moveTaskToBack(true)
+                        result.success(true)
+                    }
+                    "exitEmergencyMode" -> {
+                        stopSiren()
+                        clearLockscreenFlags()
+                        moveTaskToBack(true)
                         result.success(true)
                     }
                     else -> result.notImplemented()
@@ -64,25 +112,28 @@ class MainActivity: FlutterActivity() {
     }
 
     private fun startSiren() {
+        if (isSirenPlaying) return
         try {
             if (mediaPlayer == null) {
                 val resId = resources.getIdentifier("siren", "raw", packageName)
-                    mediaPlayer = MediaPlayer().apply {
-                        val audioAttributes = AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ALARM)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build()
-                        setAudioAttributes(audioAttributes)
-                        val afd = resources.openRawResourceFd(resId)
-                        setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                        afd.close()
-                        isLooping = true
-                        setVolume(0.8f, 0.8f)
-                        prepare()
-                        start()
-                    }
+                mediaPlayer = MediaPlayer().apply {
+                    val audioAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                    setAudioAttributes(audioAttributes)
+                    val afd = resources.openRawResourceFd(resId)
+                    setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    afd.close()
+                    isLooping = true
+                    setVolume(0.8f, 0.8f)
+                    prepare()
+                    start()
+                }
+                isSirenPlaying = true
             } else if (!mediaPlayer!!.isPlaying) {
                 mediaPlayer!!.start()
+                isSirenPlaying = true
             }
         } catch (e: Exception) {
             // Fallback
@@ -98,6 +149,7 @@ class MainActivity: FlutterActivity() {
                 it.release()
             }
             mediaPlayer = null
+            isSirenPlaying = false
         } catch (e: Exception) {
             // Fallback
         }
@@ -106,5 +158,9 @@ class MainActivity: FlutterActivity() {
     override fun onDestroy() {
         stopSiren()
         super.onDestroy()
+    }
+
+    companion object {
+        var isSirenPlaying = false
     }
 }

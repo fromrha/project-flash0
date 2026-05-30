@@ -358,8 +358,13 @@ export default function SimulatorPage() {
           {/* Status Bar (Burger Menu & SYSTEM ACTIVE status) */}
           <div className="flex justify-between items-center px-4 pt-3.5 pb-2 border-b border-zinc-900 bg-slate-950/95 text-[10px] font-mono text-zinc-400 relative z-25">
             <button 
-              onClick={() => setIsDrawerOpen(true)}
-              className="text-zinc-400 hover:text-white transition-colors cursor-pointer p-1 -m-1"
+              onClick={() => {
+                if (!showReportModal && !simulatedIncomingAlert) {
+                  setIsDrawerOpen(true);
+                }
+              }}
+              disabled={showReportModal || simulatedIncomingAlert}
+              className="text-zinc-400 hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Menu className="h-4 w-4" />
             </button>

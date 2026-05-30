@@ -67,11 +67,19 @@ void main() async {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    // Daftarkan listener pesan foreground agar alert muncul saat aplikasi terbuka
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("[LAPANG Foreground SDK] Sinyal FCM Diterima di Foreground: ${message.messageId}");
-      firebaseMessagingBackgroundHandler(message);
-    });
+    // Register silent channel to avoid overlapping audio
+    const AndroidNotificationChannel silentChannel = AndroidNotificationChannel(
+      'lapang_emergency_channel_silent', // id
+      'Siaran Siaga Darurat LAPANG (Hening)', // name
+      description: 'Pemberitahuan darurat penculikan anak tanpa suara',
+      importance: Importance.max,
+      playSound: false,
+      enableVibration: true,
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(silentChannel);
 
   } catch (notiErr) {
     print("[ERROR] Local notifications / foreground listener initialization failed: $notiErr");
@@ -174,6 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     if (data != null) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('startSiren');
     } else {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -262,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  void _handleIncomingAlert(Map<String, dynamic> data) {
+  Future<void> _handleIncomingAlert(Map<String, dynamic> data) async {
     final String victimName = data['victim_name'] ?? '';
     final String tokenId = data['secure_token_id'] ?? '';
     
@@ -270,12 +279,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return; // Ignore empty/corrupted payloads
     }
 
-    if (tokenId.isNotEmpty && tokenId == _lastProcessedTokenId) {
-      _addLog("Abaikan alert duplikat untuk Kasus: $tokenId");
-      return; // Deduplicate
-    }
+    final String uniqueId = tokenId.isNotEmpty ? tokenId : victimName;
 
-    _lastProcessedTokenId = tokenId.isNotEmpty ? tokenId : victimName;
+    // Persisted local cache duplication barrier
+    if (await isCaseAlreadyProcessed(uniqueId)) {
+      _addLog("Abaikan Replay Kasus (Ghost Notification): $uniqueId");
+      return;
+    }
+    await markCaseAsProcessed(uniqueId);
+
+    _lastProcessedTokenId = uniqueId;
 
     _setIncomingAlert(data);
     _addLog("SIAGA 1 PENCULIKAN: ${data['victim_name']} (${data['victim_age']}th)");
@@ -407,6 +420,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      drawerEnableOpenDragGesture: !_showReportForm && _incomingAlertData == null,
       drawer: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
         child: Drawer(
@@ -523,12 +537,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.menu, color: Color(0xFF94A3B8), size: 20),
-                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                          padding: EdgeInsets.zero,
-                          alignment: Alignment.centerLeft,
-                          constraints: const BoxConstraints(),
+                        GestureDetector(
+                          onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                          child: const Icon(Icons.menu, color: Color(0xFF94A3B8), size: 24),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1413,11 +1424,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       color: const Color(0xFF030712), // Deep tactical dark background
       width: double.infinity,
       height: double.infinity,
-      child: SafeArea(
-        child: _showReportForm
-            ? _buildReportFormLayout(tokenId)
-            : _buildAlertDetailsLayout(victimName, victimAge, lastSeen, clothing, suspect, summary, tokenId),
-      ),
+      child: _showReportForm
+          ? _buildReportFormLayout(tokenId)
+          : _buildAlertDetailsLayout(victimName, victimAge, lastSeen, clothing, suspect, summary, tokenId),
     );
   }
 
@@ -1606,15 +1615,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     );
                     
-                    // Stop siren via MethodChannel
-                    const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('stopSiren');
-
                     // Close the alert overlay
                     _setIncomingAlert(null);
-                    SystemNavigator.pop();
+                    
+                    // Native exit and restore window flags silently to background
+                    const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('exitEmergencyMode');
                   },
                   icon: const Icon(Icons.copy, size: 18),
-                  label: const Text('SIMPAN & SALIN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                  label: const Text('Simpan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB), // Tactical Blue
                     foregroundColor: Colors.white,
@@ -1741,13 +1749,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               );
               
-              // Stop siren via MethodChannel
-              const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('stopSiren');
-
               // Clear state, overlay, and exit app
               _reportController.clear();
               _setIncomingAlert(null);
-              SystemNavigator.pop();
+              const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('exitEmergencyMode');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF059669), // Emerald Green
