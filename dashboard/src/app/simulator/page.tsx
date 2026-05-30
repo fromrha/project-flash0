@@ -21,7 +21,8 @@ import {
   Terminal,
   HelpCircle,
   FileText,
-  Info
+  Info,
+  MapPin
 } from "lucide-react";
 import Link from "next/link";
 import { messaging, db } from "@/lib/firebase";
@@ -43,6 +44,7 @@ export default function SimulatorPage() {
   const [currentTime, setCurrentTime] = useState<string>("");
   const [locationText, setLocationText] = useState<string>("Mencari lokasi...");
   const [latLngText, setLatLngText] = useState<string>("LAT: -, LON: -");
+  const [locationState, setLocationState] = useState<"loading" | "found" | "not_found" | "denied">("loading");
 
   // Poll live clock and geo coordinates
   useEffect(() => {
@@ -62,21 +64,32 @@ export default function SimulatorPage() {
           
           if (Math.abs(lat - (-7.368)) < 1) {
             setLocationText("Kertek, Jawa Tengah");
+            setLocationState("found");
           } else if (Math.abs(lat - (-6.208)) < 1) {
             setLocationText("Menteng, D.K.I. Jakarta");
+            setLocationState("found");
           } else if (Math.abs(lat - (-7.797)) < 1) {
             setLocationText("Depok, D.I. Yogyakarta");
+            setLocationState("found");
           } else {
-            setLocationText(`Sektor ${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+            setLocationText("Lokasi tidak ditemukan");
+            setLocationState("not_found");
           }
         },
         (err) => {
-          setLocationText("Kertek, Jawa Tengah");
+          if (err.code === err.PERMISSION_DENIED) {
+            setLocationText("Ijinkan Akses Lokasi");
+            setLocationState("denied");
+          } else {
+            setLocationText("Lokasi tidak ditemukan");
+            setLocationState("not_found");
+          }
           setLatLngText("LAT: -7.3683, LON: 109.9764");
         }
       );
     } else {
-      setLocationText("Kertek, Jawa Tengah");
+      setLocationText("Lokasi tidak ditemukan");
+      setLocationState("not_found");
       setLatLngText("LAT: -7.3683, LON: 109.9764");
     }
 
@@ -348,45 +361,77 @@ export default function SimulatorPage() {
           {/* SCREEN SCROLLABLE CONTENT */}
           <div className="flex-1 flex flex-col overflow-y-auto relative p-4 z-20">
             {activeTab === "home" && (
-              <div className="flex-1 flex flex-col">
-                {/* Header Title */}
-                <div className="text-center py-2 flex flex-col items-center">
-                  <h1 className="text-xl font-bold font-mono tracking-widest text-slate-100 uppercase">LAPANG</h1>
-                  <p className="text-[9px] font-mono text-cyan-400 tracking-wider uppercase mt-0.5">Laporan Anak Hilang</p>
+              <div className="flex-1 flex flex-col relative h-full">
+                
+                {/* Top Header Group */}
+                <div className="text-center pt-2 pb-4 flex flex-col items-center gap-2.5 z-20">
+                  <div>
+                    <h1 className="text-3xl font-extrabold font-mono text-slate-100 uppercase leading-none">LAPANG</h1>
+                    <p className="text-xs font-mono text-cyan-400 uppercase mt-1.5 leading-none">Laporan Anak Hilang</p>
+                  </div>
+                  
+                  <div className={`text-[9px] font-mono py-1 px-3 rounded-full flex items-center gap-1.5 mx-auto border transition-all ${
+                    locationState === "found" 
+                      ? "text-emerald-400 bg-emerald-950/20 border-emerald-800/40 shadow-[0_0_8px_rgba(52,211,153,0.1)]" 
+                      : locationState === "denied"
+                      ? "text-rose-500 bg-rose-950/20 border-rose-800/40 animate-pulse"
+                      : "text-zinc-500 bg-zinc-950 border-zinc-900/60"
+                  }`}>
+                    <MapPin className="h-3 w-3" />
+                    <span>{locationText}</span>
+                  </div>
                 </div>
 
-                {/* Standby Radar Animation */}
-                <div className="flex-1 flex flex-col items-center justify-center py-8 text-center space-y-6">
-                  <div className="relative">
-                    <div className="absolute inset-0 rounded-full bg-cyan-500/5 animate-ping duration-1000"></div>
-                    <div className="relative h-24 w-24 bg-slate-950 border border-zinc-800 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.05)]">
-                      <img src="/lapang-logomark-white.svg" className="h-14 w-14" alt="LAPANG" />
+                {/* Dead Mid-Center Logo Container */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                  <div className="relative pointer-events-auto flex items-center justify-center">
+                    {/* Pulsing glow ring */}
+                    <div 
+                      className="absolute rounded-full bg-cyan-500/10 border border-cyan-500/30"
+                      style={{
+                        width: '180px',
+                        height: '180px',
+                        animation: 'ring-glow-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                      }}
+                    ></div>
+                    
+                    {/* Breathing main container */}
+                    <div 
+                      className="relative h-28 w-28 bg-slate-950 border border-zinc-800 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.1)]"
+                      style={{
+                        animation: 'logo-pulsate 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                      }}
+                    >
+                      <img src="/lapang-logomark-white.svg" className="h-16 w-16" alt="LAPANG" />
+                      
+                      {/* Blinking green status dot inside the logo circle */}
+                      <span className="absolute bottom-2 right-2 h-2.5 w-2.5 bg-emerald-400 rounded-full border border-slate-950 shadow-[0_0_8px_#34d399]" style={{ animation: 'logo-blinking 1.2s infinite' }}></span>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-slate-200 font-mono tracking-wide uppercase px-2">
-                      "Keterbukaan Informasi, Kecepatan Penyelamatan"
-                    </p>
-                    <p className="text-[9px] text-zinc-400 font-mono uppercase leading-relaxed max-w-[280px] mx-auto">
-                      Sistem Siaga Dini Penculikan Anak Aktif di Radius Anda.
-                    </p>
-                  </div>
-                  <div className="text-[9px] font-mono text-emerald-400 bg-emerald-950/20 border border-emerald-800/40 py-1 px-3 rounded-full flex items-center gap-1 mx-auto">
-                    <span>📍 {locationText}</span>
                   </div>
                 </div>
 
                 {/* Bottom Report Card */}
-                <div className="bg-slate-950/90 border border-zinc-800 p-4 rounded-xl text-center space-y-3 mt-auto">
-                  <p className="text-[10px] font-mono text-zinc-350">
-                    Melihat indikasi atau percobaan penculikan anak?
-                  </p>
-                  <button
-                    onClick={() => setShowReportModal(true)}
-                    className="w-full py-2.5 bg-rose-650 hover:bg-rose-650/95 text-white rounded font-mono font-bold text-xs cursor-pointer tracking-widest transition-all"
-                  >
-                    [ LAPOR SEGERA ]
-                  </button>
+                <div className="mt-auto z-20">
+                  <div className="bg-slate-950/95 border border-cyan-500/20 p-5 rounded-2xl text-center space-y-4 relative overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.05)]">
+                    {/* Subtle top indicator bar */}
+                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+                    
+                    <div className="flex flex-col items-center gap-1.5">
+                      <span className="text-[8px] font-bold text-cyan-400 uppercase tracking-widest px-2 py-0.5 bg-cyan-950/30 border border-cyan-800/40 rounded-full">
+                        PENGADUAN DARURAT
+                      </span>
+                      <h3 className="text-xs font-bold text-slate-100 font-mono leading-relaxed max-w-[280px]">
+                        Melihat indikasi atau percobaan penculikan anak?
+                      </h3>
+                    </div>
+
+                    <button
+                      onClick={() => setShowReportModal(true)}
+                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white rounded-lg font-mono font-bold text-xs cursor-pointer tracking-wider transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-[0.98]"
+                    >
+                      LAPOR SEGERA
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -457,28 +502,84 @@ export default function SimulatorPage() {
                   </div>
                 </div>
               </div>
-            )}
-
-            {activeTab === "how-it-works" && (
+            )}            {activeTab === "how-it-works" && (
               <div className="flex-1 flex flex-col space-y-4">
                 <div className="border-b border-zinc-800 pb-2">
                   <h2 className="text-sm font-bold text-cyan-400 font-mono uppercase">Cara Kerja Geofencing</h2>
                   <p className="text-[8px] text-zinc-500 font-mono uppercase">Sistem Filter Sinyal Client-Side</p>
                 </div>
 
-                <div className="bg-slate-950 border border-zinc-850 p-3 rounded-lg space-y-3 font-mono text-[9px] text-zinc-300 leading-relaxed">
+                <div className="bg-slate-950 border border-zinc-850 p-3 rounded-lg space-y-3 font-mono text-[9px] text-zinc-300 leading-relaxed max-h-[350px] overflow-y-auto">
                   <div className="p-2 bg-cyan-950/20 border border-cyan-800/20 rounded text-cyan-400 font-bold uppercase">
                     FILTRASI FORMULA HAVERSINE
                   </div>
-                  <p>
+                  <p className="text-[9px] leading-relaxed">
                     Sistem LAPANG memfilter sinyal notifikasi darurat secara client-side menggunakan Formula Haversine. Saat server memancarkan koordinat lokasi penculikan, perangkat penerima menghitung jarak antara lokasi kejadian dengan lokasi terkini perangkat.
                   </p>
-                  <p>
-                    Jika jarak berada di dalam radius bahaya (misal &lt; 10 km), sirine darurat akan diledakkan dan mengambil alih layar. Jika di luar radius, sinyal diabaikan atau disimpan sebagai arsip senyap tanpa mengganggu pengguna.
-                  </p>
-                  <p className="text-[8px] text-zinc-400 italic">
-                    Hal ini memastikan efisiensi baterai dan privasi lokasi pengguna tetap terjaga karena koordinat GPS perangkat tidak pernah dikirim keluar.
-                  </p>
+                  
+                  <div className="bg-black/60 p-2 border border-zinc-850 rounded text-center text-slate-350 space-y-1">
+                    <div className="font-bold text-cyan-400 text-[8px]">RUMUS HAVERSINE:</div>
+                    <code className="text-[8px] block py-1 break-all">
+                      a = sin²(Δlat/2) + cos(lat1) * cos(lat2) * sin²(Δlon/2)
+                    </code>
+                    <code className="text-[8px] block py-1 break-all">
+                      c = 2 * atan2(√a, √(1-a))
+                    </code>
+                    <code className="text-[8px] block py-1">
+                      d = R * c (R = 6371 km)
+                    </code>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="font-bold text-slate-300 text-[8px] uppercase">Tabel Referensi Sektor Lokasi:</div>
+                    <table className="w-full text-[8px] border-collapse border border-zinc-850 text-zinc-400">
+                      <thead>
+                        <tr className="bg-slate-900 text-cyan-400">
+                          <th className="border border-zinc-850 p-1 text-left">Sektor</th>
+                          <th className="border border-zinc-850 p-1 text-center">Latitude</th>
+                          <th className="border border-zinc-850 p-1 text-center">Longitude</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-zinc-850 p-1">Kertek, Jateng</td>
+                          <td className="border border-zinc-850 p-1 text-center">-7.3683</td>
+                          <td className="border border-zinc-850 p-1 text-center">109.9764</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-zinc-850 p-1">Menteng, Jakarta</td>
+                          <td className="border border-zinc-850 p-1 text-center">-6.2088</td>
+                          <td className="border border-zinc-850 p-1 text-center">106.8456</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-zinc-850 p-1">Depok, DIY</td>
+                          <td className="border border-zinc-850 p-1 text-center">-7.7972</td>
+                          <td className="border border-zinc-850 p-1 text-center">110.3783</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="font-bold text-slate-300 text-[8px] uppercase">Diagram Alir Geofence (ASCII):</div>
+                    <pre className="bg-black/60 p-2 border border-zinc-850 rounded text-[7px] text-emerald-400 leading-normal overflow-x-auto whitespace-pre">
+{` [ Server: Siaran Sinyal FCM ]
+             │
+             ▼
+ [ Device: Terima Payload GPS ]
+             │
+             ▼
+ [ Device: Hitung Haversine ]
+             │
+ ┌───────────┴───────────┐
+ ▼                       ▼
+[ Jarak < 10 km? ]     [ Jarak >= 10 km? ]
+ │                       │
+ ▼                       ▼
+[ SIRINE MENYALA ]     [ ABAIKAN / SENYAP ]
+[ Takeover Overlay ]   [ Simpan di Log ]`}
+                    </pre>
+                  </div>
                 </div>
               </div>
             )}
@@ -490,13 +591,24 @@ export default function SimulatorPage() {
                   <p className="text-[8px] text-zinc-500 font-mono uppercase">Apache License 2.0</p>
                 </div>
 
-                <div className="bg-slate-950 border border-zinc-850 p-3 rounded-lg flex-1 min-h-[220px] overflow-y-auto font-mono text-[8px] text-zinc-400 leading-normal max-h-[300px]">
+                <div className="bg-slate-950 border border-zinc-850 p-3 rounded-lg flex-1 min-h-[220px] overflow-y-auto font-mono text-[8px] text-zinc-400 leading-relaxed max-h-[350px]">
                   <p className="font-bold text-zinc-300 mb-2">Apache License, Version 2.0</p>
-                  <p className="mb-2">Copyright 2026 Tim LAPANG POLRI</p>
+                  <p className="mb-2 text-zinc-500 font-bold">Copyright 2026 Rahman (project-flash0 / LAPANG)</p>
                   <p className="mb-2">Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.</p>
                   <p className="mb-2">You may obtain a copy of the License at:</p>
                   <p className="text-cyan-400 underline mb-2 break-all">http://www.apache.org/licenses/LICENSE-2.0</p>
-                  <p className="mb-2">Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.</p>
+                  <p className="mb-4">Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.</p>
+                  <div className="border-t border-zinc-850 pt-2.5 mt-2 space-y-2 text-zinc-500">
+                    <p className="font-bold text-zinc-400">TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION</p>
+                    <p className="font-bold">1. Definitions.</p>
+                    <p className="pl-2">"License" shall mean the terms and conditions for use, reproduction, and distribution as defined by Sections 1 through 9 of this document.</p>
+                    <p className="pl-2">"Licensor" shall mean the copyright owner or entity authorized by the copyright owner that is granting the License.</p>
+                    <p className="pl-2">"Legal Entity" shall mean the union of the acting entity and all other entities that control, are controlled by, or are under common control with that entity.</p>
+                    <p className="font-bold">2. Grant of Copyright License.</p>
+                    <p className="pl-2">Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare Derivative Works of, publicly display, publicly perform, sublicense, and distribute the Work and such Derivative Works in Source or Object form.</p>
+                    <p className="font-bold">3. Grant of Patent License.</p>
+                    <p className="pl-2">Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Work.</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -504,25 +616,60 @@ export default function SimulatorPage() {
             {activeTab === "about" && (
               <div className="flex-1 flex flex-col space-y-4 font-mono">
                 <div className="border-b border-zinc-800 pb-2">
-                  <h2 className="text-sm font-bold text-cyan-400 font-mono uppercase">Kreator & Kontes</h2>
-                  <p className="text-[8px] text-zinc-500 font-mono uppercase">Submisi Resmi Vibe Coding</p>
+                  <h2 className="text-sm font-bold text-cyan-400 font-mono uppercase">Tentang Proyek</h2>
+                  <p className="text-[8px] text-zinc-500 font-mono uppercase">Detail Submisi Resmi</p>
                 </div>
 
-                <div className="bg-slate-950 border border-zinc-850 p-2.5 rounded-lg overflow-hidden flex flex-col gap-3">
+                <div className="bg-slate-950 border border-zinc-850 p-2.5 rounded-lg overflow-y-auto flex flex-col gap-3 max-h-[350px]">
                   <img src="/banner.jpg" className="w-full h-auto object-cover rounded border border-zinc-800" alt="Google Juara Vibe Coding" />
                   
-                  <div className="font-mono text-[9px] text-zinc-300 space-y-2 leading-relaxed">
+                  <div className="font-mono text-[9px] text-zinc-350 space-y-3 leading-relaxed">
                     <p>
-                      <span className="text-cyan-400 font-bold">LAPANG</span> adalah solusi taktis kemanusiaan yang dibangun untuk mempermudah pencarian anak hilang dengan teknologi geofencing presisi tinggi berbasis Mobile SDK dan Next.js Dashboard.
+                      <span className="text-cyan-400 font-bold">LAPANG</span> adalah solusi kemanusiaan taktis yang dirancang untuk mempercepat koordinasi pencarian anak hilang menggunakan penyaringan geofencing berbasis koordinat GPS.
                     </p>
-                    <p>
-                      Proyek ini diserahkan sebagai submisi resmi untuk kompetisi <span className="text-emerald-400 font-bold">Google Juara Vibe Coding 2026</span>.
-                    </p>
+
+                    <div className="space-y-1.5 border-t border-zinc-850 pt-2.5">
+                      <div className="text-cyan-400 font-bold text-[8px] uppercase">INFORMASI KREATOR & SUBMISI:</div>
+                      <div className="grid grid-cols-3 gap-y-1 text-[8px]">
+                        <span className="text-zinc-500">Kreator:</span>
+                        <span className="col-span-2 text-slate-200 font-bold">Rahmat</span>
+                        
+                        <span className="text-zinc-500">Versi:</span>
+                        <span className="col-span-2 text-slate-200">v0.2.0</span>
+                        
+                        <span className="text-zinc-500">Lisensi:</span>
+                        <span className="col-span-2 text-slate-200">Apache License 2.0</span>
+                        
+                        <span className="text-zinc-500">Teknologi:</span>
+                        <span className="col-span-2 text-slate-200">Flutter SDK, Next.js, Firebase FCM, Geolocator</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 border-t border-zinc-850 pt-2.5">
+                      <div className="text-cyan-400 font-bold text-[8px] uppercase">LINK REFERENSI:</div>
+                      <a 
+                        href="https://github.com/fromrha/project-flash0" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="block text-cyan-400 hover:underline text-[8px] break-all"
+                      >
+                        • Repo: https://github.com/fromrha/project-flash0
+                      </a>
+                      <a 
+                        href="https://github.com/fromrha" 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="block text-cyan-400 hover:underline text-[8px] break-all"
+                      >
+                        • Profil: https://github.com/fromrha
+                      </a>
+                    </div>
+
                     <a
                       href="https://rsvp.withgoogle.com/events/juaravibecoding"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-center py-2 bg-emerald-650 hover:bg-emerald-600 text-white rounded font-bold text-[8px] uppercase tracking-wider transition-all mt-2 cursor-pointer"
+                      className="block text-center py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white rounded font-bold text-[8px] uppercase tracking-wider transition-all mt-2 cursor-pointer"
                     >
                       Kunjungi Google Vibe Coding Event
                     </a>
@@ -611,7 +758,7 @@ export default function SimulatorPage() {
                   { id: "telemetry", label: "Sistem Telemetri", icon: Terminal },
                   { id: "how-it-works", label: "Cara Kerja", icon: HelpCircle },
                   { id: "license", label: "Lisensi Kode", icon: FileText },
-                  { id: "about", label: "Tentang & Kontes", icon: Info },
+                  { id: "about", label: "Tentang", icon: Info },
                 ].map((item) => {
                   const IconComponent = item.icon;
                   const isActive = activeTab === item.id;
@@ -726,6 +873,40 @@ export default function SimulatorPage() {
           </div>
         </div>
       )}
+
+      {/* Custom Keyframe Animations */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes logo-pulsate {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 0.95;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+          }
+          50% {
+            transform: scale(1.08);
+            opacity: 1;
+            box-shadow: 0 0 35px rgba(6, 182, 212, 0.45);
+          }
+        }
+        @keyframes ring-glow-pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 0.15;
+          }
+          50% {
+            transform: scale(1.25);
+            opacity: 0.35;
+          }
+        }
+        @keyframes logo-blinking {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.25;
+          }
+        }
+      ` }} />
 
     </main>
   );

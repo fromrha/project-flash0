@@ -176,9 +176,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String get _locationText {
+    if (_locationStatus.contains("DITOLAK")) {
+      return "Ijinkan Akses Lokasi";
+    }
     if (_currentPosition == null) return "Mencari lokasi...";
     final lat = _currentPosition!.latitude;
-    final lon = _currentPosition!.longitude;
     if ((lat - (-7.368)).abs() < 1) {
       return "Kertek, Jawa Tengah";
     } else if ((lat - (-6.208)).abs() < 1) {
@@ -186,7 +188,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } else if ((lat - (-7.797)).abs() < 1) {
       return "Depok, D.I. Yogyakarta";
     } else {
-      return "Sektor ${lat.toStringAsFixed(2)}, ${lon.toStringAsFixed(2)}";
+      return "Lokasi tidak ditemukan";
+    }
+  }
+
+  Color get _locationColor {
+    if (_locationStatus.contains("DITOLAK")) {
+      return const Color(0xFFEF4444);
+    }
+    if (_currentPosition == null) return const Color(0xFF94A3B8);
+    final lat = _currentPosition!.latitude;
+    if ((lat - (-7.368)).abs() < 1 || (lat - (-6.208)).abs() < 1 || (lat - (-7.797)).abs() < 1) {
+      return const Color(0xFF34D399);
+    } else {
+      return const Color(0xFF64748B);
     }
   }
 
@@ -419,7 +434,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _buildDrawerItem("telemetry", "Sistem Telemetri", Icons.terminal_outlined),
                     _buildDrawerItem("how-it-works", "Cara Kerja", Icons.help_outline),
                     _buildDrawerItem("license", "Lisensi Kode", Icons.description_outlined),
-                    _buildDrawerItem("about", "Tentang & Kontes", Icons.info_outline),
+                    _buildDrawerItem("about", "Tentang", Icons.info_outline),
                   ],
                 ),
               ),
@@ -541,164 +556,136 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildActiveTabContent() {
     if (_activeTab == "home") {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Column(
-          children: [
-            const Spacer(),
-            
-            // Header Title
-            const Column(
+      return Stack(
+        children: [
+          // 1. Top Header Group
+          Positioned(
+            top: 24,
+            left: 16,
+            right: 16,
+            child: Column(
               children: [
-                Text(
+                const Text(
                   'LAPANG',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'monospace',
-                    letterSpacing: 3.0,
                     color: Colors.white,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 4),
-                Text(
+                const SizedBox(height: 6),
+                const Text(
                   'Laporan Anak Hilang',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12,
                     fontFamily: 'monospace',
                     color: Color(0xFF06B6D4),
-                    letterSpacing: 1.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 40),
-
-            // Standby Logo & Animation
-            Stack(
-              alignment: Alignment.center,
-              children: [
+                const SizedBox(height: 12),
+                
+                // Location badge with custom map pin icon and dynamic colors
                 Container(
-                  width: 140,
-                  height: 140,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.01),
-                    shape: BoxShape.circle,
+                    color: _locationColor.withOpacity(0.1),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.03),
-                      width: 1,
+                      color: _locationColor.withOpacity(0.3),
                     ),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ),
-                Container(
-                  width: 110,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF030712),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF1E293B),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(28.0),
-                    child: CustomPaint(
-                      painter: LapangLogomarkPainter(
-                        color: Colors.white,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: _locationColor,
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _locationText,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'monospace',
+                          color: _locationColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+          ),
 
-            const SizedBox(height: 32),
+          // 2. Dead Mid-Center Logo
+          const Center(
+            child: PulsingLogo(),
+          ),
 
-            // Tagline & Copywriting
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                '"Keterbukaan Informasi, Kecepatan Penyelamatan"',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
-                  color: Color(0xFFE2E8F0),
-                  letterSpacing: 0.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Sistem Siaga Dini Penculikan Anak Aktif di Radius Anda.',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontFamily: 'monospace',
-                  color: Color(0xFF94A3B8),
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Sector status badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          // 3. Bottom Report Card
+          Positioned(
+            bottom: 24,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.1),
-                border: Border.all(
-                  color: const Color(0xFF059669).withOpacity(0.3),
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '📍 $_locationText',
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
-                  color: Color(0xFF34D399),
-                ),
-              ),
-            ),
-
-            const Spacer(),
-
-            // Bottom card for reporting
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF030712).withOpacity(0.8),
-                border: Border.all(color: const Color(0xFF1E293B)),
-                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFF090D16).withOpacity(0.95),
+                border: Border.all(color: const Color(0xFF06B6D4).withOpacity(0.2)),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF06B6D4).withOpacity(0.05),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  )
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF06B6D4).withOpacity(0.1),
+                        border: Border.all(color: const Color(0xFF06B6D4).withOpacity(0.2)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'PENGADUAN DARURAT',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF06B6D4),
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   const Text(
                     'Melihat indikasi atau percobaan penculikan anak?',
                     style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFFCBD5E1),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFE2E8F0),
                       fontFamily: 'monospace',
+                      height: 1.4,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      // Trigger online report form simulation
                       setState(() {
                         _showReportForm = true;
-                        // Mock alert data to go directly to report layout
                         _incomingAlertData = {
                           'secure_token_id': 'PUBLIC_REPORT_SUBMISSION',
                           'victim_name': 'Laporan Mandiri',
@@ -711,28 +698,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE11D48), // Rose Red
+                      backgroundColor: const Color(0xFF2563EB), // Brand Blue
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
+                      elevation: 4,
+                      shadowColor: const Color(0xFF2563EB).withOpacity(0.4),
                     ),
                     child: const Text(
-                      '[ LAPOR SEGERA ]',
+                      'LAPOR SEGERA',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
-                        letterSpacing: 1.5,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     } else if (_activeTab == "telemetry") {
       return SingleChildScrollView(
@@ -920,27 +909,117 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 border: Border.all(color: const Color(0xFF1E293B)),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
+                  const Text(
                     'FILTRASI FORMULA HAVERSINE',
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF06B6D4), fontFamily: 'monospace'),
                   ),
-                  SizedBox(height: 12),
-                  Text(
+                  const SizedBox(height: 12),
+                  const Text(
                     'Sistem LAPANG memfilter sinyal notifikasi darurat secara client-side menggunakan Formula Haversine. Saat server memancarkan koordinat lokasi penculikan, perangkat penerima menghitung jarak antara lokasi kejadian dengan lokasi terkini perangkat.',
                     style: TextStyle(fontSize: 9, color: Color(0xFFCBD5E1), fontFamily: 'monospace', height: 1.5),
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Jika jarak berada di dalam radius bahaya (misal < 10 km), sirine darurat akan diledakkan dan mengambil alih layar. Jika di luar radius, sinyal diabaikan atau disimpan sebagai arsip senyap tanpa mengganggu pengguna.',
-                    style: TextStyle(fontSize: 9, color: Color(0xFFCBD5E1), fontFamily: 'monospace', height: 1.5),
+                  const SizedBox(height: 12),
+                  
+                  // Formula Display Box
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      border: Border.all(color: const Color(0xFF1E293B)),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text('RUMUS HAVERSINE:', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF06B6D4), fontFamily: 'monospace')),
+                        SizedBox(height: 4),
+                        Text('a = sin²(Δlat/2) + cos(lat1) * cos(lat2) * sin²(Δlon/2)', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center),
+                        Text('c = 2 * atan2(√a, √(1-a))', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center),
+                        Text('d = R * c (R = 6371 km)', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Hal ini memastikan efisiensi baterai dan privasi lokasi pengguna tetap terjaga karena koordinat GPS perangkat tidak pernah dikirim keluar.',
-                    style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic, fontFamily: 'monospace', height: 1.5),
+                  const SizedBox(height: 16),
+                  
+                  // Table Header
+                  const Text('TABEL REFERENSI SEKTOR LOKASI:', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFFCBD5E1), fontFamily: 'monospace')),
+                  const SizedBox(height: 6),
+                  
+                  // Table
+                  Table(
+                    border: TableBorder.all(color: const Color(0xFF1E293B), width: 0.5),
+                    columnWidths: const {
+                      0: FlexColumnWidth(2),
+                      1: FlexColumnWidth(1.5),
+                      2: FlexColumnWidth(1.5),
+                    },
+                    children: [
+                      TableRow(
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF030712),
+                        ),
+                        children: const [
+                          Padding(padding: EdgeInsets.all(6), child: Text('Sektor', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF06B6D4), fontFamily: 'monospace'))),
+                          Padding(padding: EdgeInsets.all(6), child: Text('Latitude', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF06B6D4), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                          Padding(padding: EdgeInsets.all(6), child: Text('Longitude', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF06B6D4), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                        ],
+                      ),
+                      TableRow(
+                        children: [
+                          Padding(padding: EdgeInsets.all(6), child: Text('Kertek, Jateng', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'))),
+                          Padding(padding: EdgeInsets.all(6), child: Text('-7.3683', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                          Padding(padding: EdgeInsets.all(6), child: Text('109.9764', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                        ],
+                      ),
+                      TableRow(
+                        children: [
+                          Padding(padding: EdgeInsets.all(6), child: Text('Menteng, Jakarta', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'))),
+                          Padding(padding: EdgeInsets.all(6), child: Text('-6.2088', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                          Padding(padding: EdgeInsets.all(6), child: Text('106.8456', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                        ],
+                      ),
+                      TableRow(
+                        children: [
+                          Padding(padding: EdgeInsets.all(6), child: Text('Depok, DIY', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'))),
+                          Padding(padding: EdgeInsets.all(6), child: Text('-7.7972', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                          Padding(padding: EdgeInsets.all(6), child: Text('110.3783', style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'), textAlign: TextAlign.center)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // ASCII Flowchart
+                  const Text('DIAGRAM ALIR GEOFENCE (ASCII):', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFFCBD5E1), fontFamily: 'monospace')),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      border: Border.all(color: const Color(0xFF1E293B)),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      ' [ Server: Siaran Sinyal FCM ]\n'
+                      '             │\n'
+                      '             ▼\n'
+                      ' [ Device: Terima Payload GPS ]\n'
+                      '             │\n'
+                      '             ▼\n'
+                      ' [ Device: Hitung Haversine ]\n'
+                      '             │\n'
+                      ' ┌───────────┴───────────┐\n'
+                      ' ▼                       ▼\n'
+                      '[ Jarak < 10 km? ]     [ Jarak >= 10 km? ]\n'
+                      ' │                       │\n'
+                      ' ▼                       ▼\n'
+                      '[ SIRINE MENYALA ]     [ ABAIKAN / SENYAP ]\n'
+                      '[ Takeover Overlay ]   [ Simpan di Log ]',
+                      style: TextStyle(fontSize: 7, color: Color(0xFF34D399), fontFamily: 'monospace', height: 1.3),
+                    ),
                   ),
                 ],
               ),
@@ -972,12 +1051,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Copyright 2026 Tim LAPANG POLRI',
+                    'Copyright 2026 Rahman (project-flash0 / LAPANG)',
                     style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace'),
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.\n\nYou may obtain a copy of the License at:\nhttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.',
+                    'Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.\n\nYou may obtain a copy of the License at:\nhttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.\n\nTERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n1. Definitions.\n"License" shall mean the terms and conditions for use, reproduction, and distribution as defined by Sections 1 through 9 of this document.\n"Licensor" shall mean the copyright owner or entity authorized by the copyright owner that is granting the License.\n"Legal Entity" shall mean the union of the acting entity and all other entities that control, are controlled by, or are under common control with that entity.\n\n2. Grant of Copyright License.\nSubject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare Derivative Works of, publicly display, publicly perform, sublicense, and distribute the Work.\n\n3. Grant of Patent License.\nSubject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Work.',
                     style: TextStyle(fontSize: 8, color: Color(0xFF94A3B8), fontFamily: 'monospace', height: 1.4),
                   ),
                 ],
@@ -992,10 +1071,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSectionHeader("Kreator & Kontes", "Submisi Resmi Vibe Coding"),
+            _buildSectionHeader("Tentang Proyek", "Detail Submisi Resmi"),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFF0B0F19),
                 border: Border.all(color: const Color(0xFF1E293B)),
@@ -1004,12 +1083,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Mock Banner using a premium gradient container
+                  // Banner Gradient Container
                   Container(
-                    height: 100,
+                    height: 120,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF06B6D4).withOpacity(0.3)),
                       gradient: const LinearGradient(
                         colors: [Color(0xFF1E3A8A), Color(0xFF312E81), Color(0xFF020617)],
                         begin: Alignment.topLeft,
@@ -1018,26 +1097,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     child: const Center(
                       child: Padding(
-                        padding: EdgeInsets.all(12.0),
+                        padding: EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'GOOGLE JUARA VIBE CODING',
+                              'GOOGLE JUARA VIBE CODING 2026',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 10,
-                                letterSpacing: 1.5,
+                                fontSize: 12,
+                                letterSpacing: 1.0,
                                 fontFamily: 'monospace',
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            SizedBox(height: 4),
+                            SizedBox(height: 6),
                             Text(
-                              'OFFICIAL PROJECT SUBMISSION',
+                              'OFFICIAL SUBMISSION // RAHMAT',
                               style: TextStyle(
-                                color: Color(0xFF10B981),
+                                color: Color(0xFF34D399),
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: 'monospace',
@@ -1049,36 +1128,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'LAPANG adalah solusi taktis kemanusiaan yang dibangun untuk mempermudah pencarian anak hilang dengan teknologi geofencing presisi tinggi berbasis Mobile SDK dan Next.js Dashboard.',
-                    style: TextStyle(fontSize: 9, color: Color(0xFFCBD5E1), fontFamily: 'monospace', height: 1.5),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Proyek ini diserahkan sebagai submisi resmi untuk kompetisi Google Juara Vibe Coding 2026.',
-                    style: TextStyle(fontSize: 9, color: Color(0xFFCBD5E1), fontFamily: 'monospace', height: 1.5),
-                  ),
                   const SizedBox(height: 16),
+                  const Text(
+                    'LAPANG adalah solusi kemanusiaan taktis yang dirancang untuk mempercepat koordinasi pencarian anak hilang menggunakan penyaringan geofencing berbasis koordinat GPS.',
+                    style: TextStyle(fontSize: 9, color: Color(0xFFCBD5E1), fontFamily: 'monospace', height: 1.5),
+                  ),
+                  const SizedBox(height: 14),
+                  
+                  // Tech Metadata Grid
+                  const Text('INFORMASI KREATOR & SUBMISI:', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF06B6D4), fontFamily: 'monospace')),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      border: Border.all(color: const Color(0xFF1E293B)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(flex: 2, child: Text('Kreator:', style: TextStyle(fontSize: 8, color: Color(0xFF64748B), fontFamily: 'monospace'))),
+                            Expanded(flex: 3, child: Text('Rahmat', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFFE2E8F0), fontFamily: 'monospace'))),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(flex: 2, child: Text('Versi:', style: TextStyle(fontSize: 8, color: Color(0xFF64748B), fontFamily: 'monospace'))),
+                            Expanded(flex: 3, child: Text('v0.2.0', style: TextStyle(fontSize: 8, color: Color(0xFFE2E8F0), fontFamily: 'monospace'))),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(flex: 2, child: Text('Lisensi:', style: TextStyle(fontSize: 8, color: Color(0xFF64748B), fontFamily: 'monospace'))),
+                            Expanded(flex: 3, child: Text('Apache 2.0', style: TextStyle(fontSize: 8, color: Color(0xFFE2E8F0), fontFamily: 'monospace'))),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(flex: 2, child: Text('Teknologi:', style: TextStyle(fontSize: 8, color: Color(0xFF64748B), fontFamily: 'monospace'))),
+                            Expanded(flex: 3, child: Text('Flutter SDK, Next.js, Firebase FCM, Geolocator', style: TextStyle(fontSize: 8, color: Color(0xFFE2E8F0), fontFamily: 'monospace'))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  
+                  // Links Section
+                  const Text('LINK REFERENSI:', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF06B6D4), fontFamily: 'monospace')),
+                  const SizedBox(height: 6),
+                  ElevatedButton(
+                    onPressed: () {
+                      Clipboard.setData(const ClipboardData(text: 'https://github.com/fromrha/project-flash0'));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Link Repo disalin!'), backgroundColor: Color(0xFF06B6D4)),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E293B).withOpacity(0.5),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: const Text('SALIN LINK REPOSITORI', style: TextStyle(fontSize: 8, fontFamily: 'monospace')),
+                  ),
+                  const SizedBox(height: 6),
+                  ElevatedButton(
+                    onPressed: () {
+                      Clipboard.setData(const ClipboardData(text: 'https://github.com/fromrha'));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Link Profil disalin!'), backgroundColor: Color(0xFF06B6D4)),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E293B).withOpacity(0.5),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: const Text('SALIN LINK PROFIL KREATOR', style: TextStyle(fontSize: 8, fontFamily: 'monospace')),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Official RSVP Button
                   ElevatedButton(
                     onPressed: () {
                       Clipboard.setData(const ClipboardData(text: 'https://rsvp.withgoogle.com/events/juaravibecoding'));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Link Google Vibe Coding disalin!'),
+                          content: Text('Link RSVP Event disalin!'),
                           backgroundColor: Color(0xFF10B981),
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF059669),
+                      backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shadowColor: const Color(0xFF2563EB).withOpacity(0.4),
+                      elevation: 4,
                     ),
                     child: const Text(
                       'SALIN LINK GOOGLE VIBE CODING',
-                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                     ),
                   ),
                 ],
@@ -1432,6 +1590,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 icon: const Icon(Icons.arrow_back, color: Colors.white70),
                 onPressed: () {
                   setState(() {
+                    if (tokenId == 'PUBLIC_REPORT_SUBMISSION') {
+                      _incomingAlertData = null;
+                    }
                     _showReportForm = false;
                   });
                 },
@@ -1746,5 +1907,156 @@ class LapangLogomarkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class PulsingLogo extends StatefulWidget {
+  const PulsingLogo({super.key});
+
+  @override
+  State<PulsingLogo> createState() => _PulsingLogoState();
+}
+
+class _PulsingLogoState extends State<PulsingLogo> with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+  
+  late AnimationController _blinkController;
+  late Animation<double> _blinkAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _blinkAnimation = Tween<double>(begin: 0.25, end: 1.0).animate(
+      CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _blinkController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Outer glow ring pulsing scale
+            Transform.scale(
+              scale: 1.0 + (_scaleAnimation.value - 1.0) * 3.0,
+              child: Opacity(
+                opacity: 0.35 - (_scaleAnimation.value - 1.0) * 2.5,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF06B6D4).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+            // Main logo container
+            Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Opacity(
+                opacity: _opacityAnimation.value,
+                child: Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF030712),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF1E293B),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF06B6D4).withOpacity(0.15 * _opacityAnimation.value),
+                        blurRadius: 20 * _scaleAnimation.value,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  ),
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(28.0),
+                        child: CustomPaint(
+                          painter: LapangLogomarkPainter(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      
+                      // Blinking green dot inside the logo circle
+                      Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: AnimatedBuilder(
+                          animation: _blinkController,
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: _blinkAnimation.value,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF34D399),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFF030712), width: 1),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0xFF34D399),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    )
+                                  ]
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
