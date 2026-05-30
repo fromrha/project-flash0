@@ -62,19 +62,30 @@ export default function SimulatorPage() {
           const lon = pos.coords.longitude;
           setLatLngText(`LAT: ${lat.toFixed(4)}, LON: ${lon.toFixed(4)}`);
           
-          if (Math.abs(lat - (-7.368)) < 1) {
-            setLocationText("Kertek, Jawa Tengah");
-            setLocationState("found");
-          } else if (Math.abs(lat - (-6.208)) < 1) {
-            setLocationText("Menteng, D.K.I. Jakarta");
-            setLocationState("found");
-          } else if (Math.abs(lat - (-7.797)) < 1) {
-            setLocationText("Depok, D.I. Yogyakarta");
-            setLocationState("found");
-          } else {
-            setLocationText("Lokasi tidak ditemukan");
-            setLocationState("not_found");
-          }
+          // Reverse geocoding via Nominatim API (OpenStreetMap)
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
+            .then((res) => res.json())
+            .then((data) => {
+              const address = data.address || {};
+              const road = address.road || address.pedestrian || address.suburb || address.village || "";
+              const suburb = address.suburb || address.village || address.city_district || address.city || address.county || "";
+              if (road || suburb) {
+                const formatted = [
+                  road ? `Jl. ${road}` : "",
+                  suburb ? suburb : ""
+                ].filter(Boolean).join(", ");
+                setLocationText(formatted);
+                setLocationState("found");
+              } else {
+                setLocationText("Lokasi tidak ditemukan");
+                setLocationState("not_found");
+              }
+            })
+            .catch((err) => {
+              console.error("Nominatim reverse geocode failed:", err);
+              setLocationText("Lokasi tidak ditemukan");
+              setLocationState("not_found");
+            });
         },
         (err) => {
           if (err.code === err.PERMISSION_DENIED) {
@@ -324,7 +335,7 @@ export default function SimulatorPage() {
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.08),transparent_70%)]"></div>
 
       {/* Back Button */}
-      <div className="w-full max-w-md mb-4 self-center z-10">
+      <div className="absolute top-6 left-6 z-30">
         <Link href="/" className="text-[10px] font-mono text-cyan-400 flex items-center gap-2 hover:text-white transition-all bg-slate-950/80 py-2 px-3 rounded border border-zinc-800/40 w-fit">
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>KEMBALI KE KONSOL POLRI</span>
@@ -332,7 +343,7 @@ export default function SimulatorPage() {
       </div>
 
       {/* MOBILE DEVICE CONTAINER */}
-      <div className="w-full max-w-md bg-[#090d16] rounded-[45px] border-4 border-zinc-800 p-3 shadow-2xl relative z-10 flex flex-col min-h-[640px] shadow-[0_0_40px_rgba(6,182,212,0.15)] overflow-hidden">
+      <div className="w-full max-w-[400px] h-[92vh] max-h-[880px] bg-[#090d16] rounded-[45px] border-4 border-zinc-800 p-3 shadow-2xl relative z-10 flex flex-col shadow-[0_0_40px_rgba(6,182,212,0.15)] overflow-hidden">
         
         {/* Device Speaker & Camera Notch */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-4 bg-black rounded-full border border-zinc-800/80 flex justify-center items-center gap-1.5 z-40">
@@ -341,7 +352,7 @@ export default function SimulatorPage() {
         </div>
 
         {/* SCREEN CONTAINER (Inner screen) */}
-        <div className="flex-1 flex flex-col relative overflow-hidden rounded-[36px] bg-[#030712] border border-zinc-900 mt-2 z-20 min-h-[580px]">
+        <div className="flex-1 flex flex-col relative overflow-hidden rounded-[36px] bg-[#030712] border border-zinc-900 mt-2 z-20">
           
           {/* Status Bar (Burger Menu & SYSTEM ACTIVE status) */}
           <div className="flex justify-between items-center px-4 pt-3.5 pb-2 border-b border-zinc-900 bg-slate-950/95 text-[10px] font-mono text-zinc-400 relative z-25">
@@ -411,23 +422,21 @@ export default function SimulatorPage() {
                 </div>
 
                 {/* Bottom Report Card */}
-                <div className="mt-auto z-20">
+                <div className="mt-auto z-20 flex flex-col gap-2">
+                  <div className="text-[10px] font-bold text-cyan-400 tracking-wider text-left pl-2 font-mono uppercase">
+                    PENGADUAN DARURAT
+                  </div>
                   <div className="bg-slate-950/95 border border-cyan-500/20 p-5 rounded-2xl text-center space-y-4 relative overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.05)]">
                     {/* Subtle top indicator bar */}
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 to-cyan-400"></div>
                     
-                    <div className="flex flex-col items-center gap-1.5">
-                      <span className="text-[8px] font-bold text-cyan-400 uppercase tracking-widest px-2 py-0.5 bg-cyan-950/30 border border-cyan-800/40 rounded-full">
-                        PENGADUAN DARURAT
-                      </span>
-                      <h3 className="text-xs font-bold text-slate-100 font-mono leading-relaxed max-w-[280px]">
-                        Melihat indikasi atau percobaan penculikan anak?
-                      </h3>
-                    </div>
+                    <h3 className="text-sm font-extrabold text-slate-100 font-mono leading-relaxed max-w-[280px] mx-auto">
+                      Melihat indikasi atau percobaan penculikan anak?
+                    </h3>
 
                     <button
                       onClick={() => setShowReportModal(true)}
-                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white rounded-lg font-mono font-bold text-xs cursor-pointer tracking-wider transition-all shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-[0.98]"
+                      className="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-mono font-bold text-xs cursor-pointer tracking-wider transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-[0.98]"
                     >
                       LAPOR SEGERA
                     </button>
