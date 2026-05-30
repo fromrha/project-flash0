@@ -4,6 +4,24 @@ All notable changes to this project will be documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Versioning follows [Semantic Versioning](https://semver.org/)
 
+## [Unreleased]
+### Added
+- Dynamic Telemetry permission cards: GPS, Overlay, Lockscreen — all read real device state via MethodChannel
+- Smart permission button in Telemetry tab: turns red and opens system settings if any permission is denied
+- `WidgetsBindingObserver` on DashboardScreen to refresh permission states when app resumes from background
+- `checkOverlayPermission`, `openOverlaySettings`, `checkLockscreenPermission`, `openNotificationSettings` MethodChannel handlers in MainActivity.kt
+- Audio focus request (`AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE`) in siren so volume isn't reduced during WhatsApp calls
+- `setLockscreenActive` MethodChannel handler — forces lockscreen bypass & screen wake when alert comes in from foreground (not just cold start)
+- Restored pill/ring concentric circle animation around `Icons.new_releases` icon in emergency overlay header
+- Looping alert audio in web simulator via `useRef<HTMLAudioElement>` — audio stops on dismiss
+
+### Changed
+- Alert overlay icon reverted to layered ring design (outermost faint ring → middle ring → filled core circle with glow)
+- Removed "PERINGATAN DITERIMA: AREA RADIUS SIAGA 1" subtitle from overlay header
+- Age badge (`X TH`) font size increased from 10 to 14px with larger padding
+- Siren volume raised to 1.0f (full) with audio focus lock to bypass call ducking
+- `_setIncomingAlert` now calls `setLockscreenActive` + `immersiveSticky` for foreground alert coverage
+
 ## [v0.3.0] - 2026-05-30
 ### Added
 - Overhauled Tab Tentang: removed all box wrappers, borders, and rigid backgrounds for content. Extended typography and scrollable layouts.

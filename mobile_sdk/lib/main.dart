@@ -114,13 +114,21 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   String _fcmToken = "Mengambil Token...";
   String _notificationsStatus = "Memeriksa Izin Notifikasi...";
   Map<String, dynamic>? _incomingAlertData;
   List<String> _telemetryLogs = [];
   bool _showReportForm = false;
   final TextEditingController _reportController = TextEditingController();
+
+  // Dynamic permission states for Telemetry tab
+  String _locationStatus = "Memeriksa...";
+  bool _locationStatusOk = false;
+  String _overlayPermissionStatus = "Memeriksa...";
+  bool _overlayPermissionOk = false;
+  String _lockscreenPermissionStatus = "Memeriksa...";
+  bool _lockscreenPermissionOk = false;
 
   String _activeTab = "home";
   String _currentTimeString = "00:00:00";
@@ -134,6 +142,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -149,6 +158,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _setupFcmUiListeners();
     _setupLocalNotificationListeners();
     _setupNativeOverlayChannel();
+    // Initial permission state check (non-blocking)
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshPermissionStates());
 
     // Start periodic timer for clock in drawer
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -162,7 +173,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPermissionStates();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _reportController.dispose();
     _clockTimer?.cancel();
     super.dispose();
@@ -181,7 +200,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _showReportForm = false;
     });
     if (data != null) {
+      // Force fullscreen + screen wake from Flutter side (for foreground alerts)
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('setLockscreenActive');
       const MethodChannel('com.lapang.emergency.sdk/overlay').invokeMethod('startSiren');
     } else {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -189,6 +210,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ));
+    }
+  }
+
+  Future<void> _refreshPermissionStates() async {
+    if (!mounted) return;
+    const overlayChannel = MethodChannel('com.lapang.emergency.sdk/overlay');
+
+    // Check GPS location permission
+    final LocationPermission locPerm = await Geolocator.checkPermission();
+    String locStatus;
+    bool locOk;
+    if (locPerm == LocationPermission.always) {
+      locStatus = 'DIIZINKAN (SELALU)';
+      locOk = true;
+    } else if (locPerm == LocationPermission.whileInUse) {
+      locStatus = 'SAAT DIGUNAKAN';
+      locOk = true;
+    } else {
+      locStatus = 'DITOLAK';
+      locOk = false;
+    }
+
+    // Check overlay (draw over other apps) permission via native
+    bool canDrawOverlay = false;
+    String overlayStatus = 'DITOLAK';
+    try {
+      final result = await overlayChannel.invokeMethod<bool>('checkOverlayPermission');
+      canDrawOverlay = result ?? false;
+      overlayStatus = canDrawOverlay ? 'DIIZINKAN (AKTIF)' : 'PERLU DIAKTIFKAN';
+    } catch (_) {
+      overlayStatus = 'TIDAK DAPAT DIPERIKSA';
+    }
+
+    // Check lockscreen bypass support via native
+    bool lockscreenOk = false;
+    String lockscreenStatus = 'TIDAK DIDUKUNG';
+    try {
+      final result = await overlayChannel.invokeMethod<bool>('checkLockscreenPermission');
+      lockscreenOk = result ?? false;
+      lockscreenStatus = lockscreenOk ? 'AKTIF (DIDUKUNG)' : 'TIDAK DIDUKUNG (Android < 8.1)';
+    } catch (_) {
+      lockscreenStatus = 'TIDAK DAPAT DIPERIKSA';
+    }
+
+    if (mounted) {
+      setState(() {
+        _locationStatus = locStatus;
+        _locationStatusOk = locOk;
+        _overlayPermissionStatus = overlayStatus;
+        _overlayPermissionOk = canDrawOverlay;
+        _lockscreenPermissionStatus = lockscreenStatus;
+        _lockscreenPermissionOk = lockscreenOk;
+      });
     }
   }
 
@@ -457,7 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // Drawer Tabs list
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   children: [
                     _buildDrawerItem("home", "Beranda", Icons.home_outlined),
                     _buildDrawerItem("telemetry", "Sistem Telemetri", Icons.terminal_outlined),
@@ -781,6 +855,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       );
     } else if (_activeTab == "telemetry") {
+      // Determine if any critical permission is denied
+      final bool notifOk = _notificationsStatus.contains("DIIZINKAN");
+      final bool anyDenied = !notifOk || !_locationStatusOk || !_overlayPermissionOk;
+      
       return SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -789,47 +867,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildSectionHeader("Sistem Telemetri", "Status & Log Perangkat Seluler"),
             const SizedBox(height: 16),
             
-            // Permissions cards
+            // Permission cards — row 1
             Row(
               children: [
                 Expanded(
                   child: _buildSimpleStatusCard(
                     "IZIN NOTIFIKASI",
-                    _notificationsStatus,
-                    _notificationsStatus.contains("DIIZINKAN"),
+                    notifOk ? "DIIZINKAN (AKTIF)" : "DITOLAK",
+                    notifOk,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildSimpleStatusCard(
                     "IZIN LOKASI (GPS)",
-                    "AKTIF (SELALU)",
-                    true,
+                    _locationStatus,
+                    _locationStatusOk,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            
-            _buildSimpleStatusCard(
-              "IZIN TAMPIL DI ATAS APLIKASI LAIN",
-              "DIIZINKAN (AKTIF)",
-              true,
+            // Permission cards — row 2
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSimpleStatusCard(
+                    "TAMPIL DI ATAS APPS LAIN",
+                    _overlayPermissionStatus,
+                    _overlayPermissionOk,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildSimpleStatusCard(
+                    "BYPASS LOCKSCREEN",
+                    _lockscreenPermissionStatus,
+                    _lockscreenPermissionOk,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
             ElevatedButton(
-              onPressed: _requestAllPermissionsAndSetup,
+              onPressed: () async {
+                if (anyDenied) {
+                  // Open the first denied permission's settings
+                  const ch = MethodChannel('com.lapang.emergency.sdk/overlay');
+                  if (!notifOk) {
+                    await ch.invokeMethod('openNotificationSettings');
+                  } else if (!_overlayPermissionOk) {
+                    await ch.invokeMethod('openOverlaySettings');
+                  } else {
+                    await _requestAllPermissionsAndSetup();
+                  }
+                } else {
+                  await _requestAllPermissionsAndSetup();
+                  await _refreshPermissionStates();
+                }
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF06B6D4).withOpacity(0.1),
-                foregroundColor: const Color(0xFF06B6D4),
-                side: BorderSide(color: const Color(0xFF06B6D4).withOpacity(0.2)),
+                backgroundColor: anyDenied
+                    ? const Color(0xFFEF4444).withOpacity(0.1)
+                    : const Color(0xFF06B6D4).withOpacity(0.1),
+                foregroundColor: anyDenied
+                    ? const Color(0xFFEF4444)
+                    : const Color(0xFF06B6D4),
+                side: BorderSide(
+                  color: anyDenied
+                      ? const Color(0xFFEF4444).withOpacity(0.3)
+                      : const Color(0xFF06B6D4).withOpacity(0.2),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
-              child: const Text(
-                'AKTIFKAN MOCK NOTIFIKASI SISTEM',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+              child: Text(
+                anyDenied ? 'AKTIFKAN IZIN YANG DIPERLUKAN' : 'PERBARUI STATUS IZIN',
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
               ),
             ),
             const SizedBox(height: 16),
@@ -1419,6 +1534,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final String suspect = data['suspect_description'] ?? 'Mencari petunjuk kendaraan...';
     final String summary = data['ai_summary'] ?? 'SIAGA 1: Penculikan Anak!';
     final String tokenId = data['secure_token_id'] ?? '';
+    final String victimPhoto = data['victim_photo'] ?? 'null';
 
     return Container(
       color: const Color(0xFF030712), // Deep tactical dark background
@@ -1426,7 +1542,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       height: double.infinity,
       child: _showReportForm
           ? _buildReportFormLayout(tokenId)
-          : _buildAlertDetailsLayout(victimName, victimAge, lastSeen, clothing, suspect, summary, tokenId),
+          : _buildAlertDetailsLayout(victimName, victimAge, lastSeen, clothing, suspect, summary, tokenId, victimPhoto),
     );
   }
 
@@ -1438,6 +1554,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String suspect,
     String summary,
     String tokenId,
+    String victimPhoto,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -1447,136 +1564,166 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           const SizedBox(height: 20),
           
-          // Tactical Alert Header
+          // Tactical Alert Header — pill/ring icon design
           Column(
             children: [
-              Container(
-                height: 72,
-                width: 72,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFEF4444), width: 2),
-                ),
-                child: const Icon(
-                  Icons.gpp_bad, // Shield warning icon
-                  color: Color(0xFFEF4444),
-                  size: 40,
-                ),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.4, end: 0.9),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeInOut,
+                builder: (context, opacity, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outermost faint ring
+                      Container(
+                        height: 96,
+                        width: 96,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFEF4444).withOpacity(opacity * 0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      // Middle ring
+                      Container(
+                        height: 80,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFEF4444).withOpacity(opacity * 0.55),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      // Filled core circle
+                      Container(
+                        height: 64,
+                        width: 64,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEF4444).withOpacity(0.4),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.new_releases,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
               const Text(
-                'SIAGA 1: PENCULIKAN ANAK',
+                'Laporan Anak Hilang',
                 style: TextStyle(
                   color: Color(0xFFEF4444),
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
+                  letterSpacing: 1.0,
                   fontFamily: 'monospace',
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'PERINGATAN DITERIMA: AREA RADIUS SIAGA 1',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  letterSpacing: 1.0,
-                  fontFamily: 'monospace',
-                ),
-              ),
             ],
           ),
           
-          // Main Tactical Information Card
+          // Main Tactical Information list (no kaku container background, directly on main background)
           Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 24.0),
-              padding: const EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0B0F19), // dark card
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFEF4444).withOpacity(0.1),
-                    blurRadius: 16,
-                    spreadRadius: 2,
-                  )
-                ]
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with Name and Badge
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '$victimName, (${victimAge}th)',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                              fontFamily: 'monospace',
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Photo Placeholder (1:1 Ratio aspect)
+                  if (victimPhoto.isNotEmpty && victimPhoto != 'null') ...[
+                    AspectRatio(
+                      aspectRatio: 1.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            victimPhoto,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: Colors.white10,
+                              child: const Icon(Icons.broken_image, color: Colors.white24, size: 48),
                             ),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: const Color(0xFFEF4444)),
-                          ),
-                          child: const Text(
-                            'AKTIF',
-                            style: TextStyle(
-                              color: Color(0xFFEF4444),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    
-                    // Info details
-                    _buildAlertDetailRow('TERAKHIR TERLIHAT:', lastSeen),
-                    const SizedBox(height: 12),
-                    _buildAlertDetailRow('PAKAIAN TERAKHIR:', clothing),
-                    const SizedBox(height: 12),
-                    _buildAlertDetailRow('KENDARAAN PENCULIK:', suspect),
-                    const SizedBox(height: 20),
-                    
-                    // Quote Box
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12.0),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.15)),
-                      ),
-                      child: Text(
-                        '"$summary"',
-                        style: const TextStyle(
-                          color: Color(0xFFFDA4AF), // soft pink
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                          height: 1.4,
-                          fontFamily: 'monospace',
+                  ],
+
+                  // Header with Name and Age Badge
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          victimName.toUpperCase().replaceAll(',', ''),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                            fontFamily: 'monospace',
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.4)),
+                        ),
+                        child: Text(
+                          '$victimAge TH',
+                          style: const TextStyle(
+                            color: Color(0xFFEF4444),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Info details
+                  _buildAlertDetailRow('TERAKHIR DILIHAT:', lastSeen),
+                  const SizedBox(height: 12),
+                  _buildAlertDetailRow('PAKAIAN TERAKHIR:', clothing),
+                  const SizedBox(height: 12),
+                  _buildAlertDetailRow('KENDARAAN PENCULIK:', suspect),
+                ],
               ),
             ),
           ),
@@ -1586,24 +1733,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _showReportForm = true;
-                    });
-                  },
-                  icon: const Icon(Icons.warning_amber_rounded, size: 18),
-                  label: const Text('LAPOR PETUNJUK', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
                   onPressed: () {
                     final String secureLink = 'https://lapang.polri.go.id/report/$tokenId';
                     final String copyText = "DITEMUKAN ALERT LAPANG: $summary\nLapor di: $secureLink";
@@ -1623,11 +1752,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   icon: const Icon(Icons.copy, size: 18),
                   label: const Text('Simpan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showReportForm = true;
+                    });
+                  },
+                  icon: const Icon(Icons.warning_amber_rounded, size: 18),
+                  label: const Text('LAPOR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB), // Tactical Blue
+                    backgroundColor: const Color(0xFFDC2626), // Bright Red to match homepage
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 8,
+                    shadowColor: const Color(0xFFDC2626).withOpacity(0.4),
                   ),
                 ),
               ),
@@ -1779,7 +1928,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label,
           style: const TextStyle(
             color: Color(0xFFF43F5E), // Rose red
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
             fontFamily: 'monospace',
@@ -1790,7 +1939,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 12,
+            fontSize: 13,
             height: 1.3,
             fontFamily: 'monospace',
           ),

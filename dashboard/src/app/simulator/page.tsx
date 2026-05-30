@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   ShieldAlert, 
   Shield,
@@ -46,6 +46,8 @@ export default function SimulatorPage() {
   const [locationText, setLocationText] = useState<string>("Mencari lokasi...");
   const [latLngText, setLatLngText] = useState<string>("LAT: -, LON: -");
   const [locationState, setLocationState] = useState<"loading" | "found" | "not_found" | "denied">("loading");
+  // Persistent looping alert audio ref — survives re-renders
+  const alertAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Poll live clock and geo coordinates
   useEffect(() => {
@@ -154,10 +156,14 @@ export default function SimulatorPage() {
           setSimulatedIncomingAlert(true);
           addDeviceLog(`[ALERT RECEIVER] FCM High-Priority Diterima (BARU): ${alertData.victim_info.name}`);
           
-          // Play emergency siren sound
+          // Play emergency siren sound — looping
           try {
-            new Audio('/alert.aac').play()
-              .then(() => addDeviceLog("TELEMETRI AUDIO: Sirine darurat diputar!"))
+            if (!alertAudioRef.current) {
+              alertAudioRef.current = new Audio('/alert.aac');
+              alertAudioRef.current.loop = true;
+            }
+            alertAudioRef.current.play()
+              .then(() => addDeviceLog("TELEMETRI AUDIO: Sirine darurat diputar (looping)!"))
               .catch(err => {
                 console.warn("Audio play blocked by browser autoplay policy:", err);
                 addDeviceLog("TELEMETRI AUDIO: Sirine diblokir oleh kebijakan browser.");
@@ -463,32 +469,50 @@ export default function SimulatorPage() {
                   <p className="text-[8px] text-zinc-500 font-mono uppercase">Status & Log Perangkat Seluler</p>
                 </div>
 
-                {/* Permission status cards */}
+                {/* Permission status cards — 2×2 grid, all live */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-slate-950 border border-zinc-850 p-2.5 rounded-lg flex flex-col gap-1.5">
+                  <div className={`bg-slate-950 border p-2.5 rounded-lg flex flex-col gap-1.5 ${permission === "granted" ? "border-zinc-800" : "border-rose-900/40"}`}>
                     <span className="text-[8px] text-zinc-400 font-bold uppercase">IZIN NOTIFIKASI</span>
                     <span className={`text-[9px] font-bold font-mono uppercase ${
                       permission === "granted" ? "text-emerald-400" : "text-rose-400"
-                    }`}>{permission === "granted" ? "AKTIF" : "NON-AKTIF"}</span>
+                    }`}>{permission === "granted" ? "DIIZINKAN (AKTIF)" : "DITOLAK"}</span>
                   </div>
-                  <div className="bg-slate-950 border border-zinc-850 p-2.5 rounded-lg flex flex-col gap-1.5">
+                  <div className={`bg-slate-950 border p-2.5 rounded-lg flex flex-col gap-1.5 ${locationState === "found" || locationState === "not_found" ? "border-zinc-800" : locationState === "denied" ? "border-rose-900/40" : "border-zinc-800"}`}>
                     <span className="text-[8px] text-zinc-400 font-bold uppercase">IZIN LOKASI (GPS)</span>
-                    <span className="text-[9px] font-bold font-mono text-emerald-400 uppercase">AKTIF (SELALU)</span>
+                    <span className={`text-[9px] font-bold font-mono uppercase ${
+                      locationState === "found" ? "text-emerald-400"
+                      : locationState === "not_found" ? "text-amber-400"
+                      : locationState === "denied" ? "text-rose-400"
+                      : "text-zinc-500"
+                    }`}>
+                      {locationState === "found" ? "DIIZINKAN (AKTIF)"
+                       : locationState === "not_found" ? "DIIZINKAN (TIDAK DITEMUKAN)"
+                       : locationState === "denied" ? "DITOLAK"
+                       : "MEMERIKSA..."}
+                    </span>
                   </div>
-                </div>
-
-                <div className="bg-slate-950 border border-zinc-850 p-2.5 rounded-lg flex flex-col gap-1.5">
-                  <span className="text-[8px] text-zinc-400 font-bold uppercase">IZIN TAMPIL DI ATAS APLIKASI LAIN</span>
-                  <span className="text-[9px] font-bold font-mono text-emerald-400 uppercase">DIIZINKAN (AKTIF)</span>
+                  <div className="bg-slate-950 border border-zinc-800 p-2.5 rounded-lg flex flex-col gap-1.5">
+                    <span className="text-[8px] text-zinc-400 font-bold uppercase">TAMPIL DI ATAS APP</span>
+                    <span className="text-[9px] font-bold font-mono text-emerald-400 uppercase">BROWSER NATIVE</span>
+                  </div>
+                  <div className="bg-slate-950 border border-zinc-800 p-2.5 rounded-lg flex flex-col gap-1.5">
+                    <span className="text-[8px] text-zinc-400 font-bold uppercase">BYPASS LOCKSCREEN</span>
+                    <span className="text-[9px] font-bold font-mono text-emerald-400 uppercase">WEB (N/A)</span>
+                  </div>
                 </div>
 
                 <button
                   onClick={handleRequestPermission}
                   disabled={isRegistering}
-                  className="w-full py-2 bg-cyan-500/10 border border-cyan-400/20 hover:bg-cyan-500/20 text-cyan-400 text-[9px] font-bold font-mono rounded cursor-pointer transition-all uppercase"
+                  className={`w-full py-2 text-[9px] font-bold font-mono rounded cursor-pointer transition-all uppercase border ${
+                    permission !== "granted"
+                      ? "bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20 text-rose-400"
+                      : "bg-cyan-500/10 border-cyan-400/20 hover:bg-cyan-500/20 text-cyan-400"
+                  }`}
                 >
-                  Ajukan Izin Notifikasi Mock
+                  {permission !== "granted" ? "AKTIFKAN IZIN NOTIFIKASI" : "Ajukan Izin Notifikasi Mock"}
                 </button>
+
 
                 {/* Token Card */}
                 {fcmToken && (
@@ -744,6 +768,7 @@ export default function SimulatorPage() {
                       }
                     }
                     setShowReportModal(false);
+                    if (alertAudioRef.current) { alertAudioRef.current.pause(); alertAudioRef.current.currentTime = 0; alertAudioRef.current = null; }
                     setSimulatedIncomingAlert(false);
                     setReportText("");
                   }}
@@ -780,7 +805,7 @@ export default function SimulatorPage() {
               </div>
 
               {/* Drawer Body - Tabs */}
-              <div className="flex-1 p-3 space-y-1 overflow-y-auto">
+              <div className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {[
                   { id: "home", label: "Beranda", icon: Home },
                   { id: "telemetry", label: "Sistem Telemetri", icon: Terminal },
@@ -836,35 +861,59 @@ export default function SimulatorPage() {
         <div className="fixed inset-0 bg-black/98 z-50 p-6 flex flex-col justify-between items-center font-mono">
           <div className="w-full max-w-sm flex flex-col items-center text-center mt-12">
             {/* Glowing Pulse Ring */}
-            <div className="h-16 w-16 bg-rose-600/20 border-2 border-rose-500 rounded-full flex items-center justify-center mb-6 animate-bounce relative">
-              <ShieldAlert className="text-rose-500 h-8 w-8" />
-              <span className="absolute inset-0 border-4 border-rose-500 rounded-full animate-ping opacity-75"></span>
+            <div className="h-16 w-16 bg-red-600 rounded-full flex items-center justify-center mb-6 animate-bounce relative">
+              <span className="material-symbols-outlined text-white text-3xl">release_alert</span>
+              <span className="absolute inset-0 border-4 border-red-500 rounded-full animate-ping opacity-75"></span>
             </div>
             
-            <h2 className="text-lg font-bold text-rose-500 uppercase tracking-widest animate-pulse">SIAGA 1: PENCULIKAN ANAK</h2>
+            <h2 className="text-xl font-black text-rose-500 uppercase tracking-wider animate-pulse">Laporan Anak Hilang</h2>
             <p className="text-[10px] text-rose-400 uppercase mt-1 tracking-wider">PERINGATAN DITERIMA: AREA RADIUS SIAGA 1</p>
 
+            {/* Victim Photo Placeholder (1:1 Ratio aspect) */}
+            {simulatedAlert.victim_info.photo_url && simulatedAlert.victim_info.photo_url !== "null" && simulatedAlert.victim_info.photo_url !== "" && (
+              <div className="w-full aspect-square relative rounded-2xl overflow-hidden border border-zinc-800/80 shadow-[0_10px_30px_rgba(0,0,0,0.6)] my-4">
+                <img 
+                  src={simulatedAlert.victim_info.photo_url} 
+                  alt="Foto Korban" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
             {/* Victim Details card */}
-            <div className="w-full bg-zinc-950 border border-rose-500/30 p-4 rounded-xl mt-6 space-y-3 text-left">
-              <div className="flex justify-between items-center border-b border-rose-500/20 pb-2">
-                <span className="text-xs font-bold text-slate-100">{simulatedAlert.victim_info.name} ({simulatedAlert.victim_info.age}th)</span>
-                <span className="text-[8px] border border-rose-500/40 text-rose-400 px-1.5 py-0.5 rounded uppercase font-bold">AKTIF</span>
+            <div className="w-full mt-6 space-y-3 text-left">
+              <div className="flex justify-between items-start gap-4 border-b border-rose-500/20 pb-2">
+                <span className="text-base font-extrabold text-slate-100 break-words flex-1 leading-tight">
+                  {simulatedAlert.victim_info.name.toUpperCase().replace(/,/g, '')}
+                </span>
+                <span className="text-xs font-bold text-rose-400 px-2 py-0.5 rounded border border-rose-500/20 uppercase whitespace-nowrap">
+                  {simulatedAlert.victim_info.age} TH
+                </span>
               </div>
 
-              <div className="text-[10px] space-y-1.5 text-zinc-300">
-                <div><span className="text-rose-400 font-bold uppercase">TERAKHIR TERLIHAT:</span> {simulatedAlert.incident_info.last_seen_location}</div>
-                <div><span className="text-rose-400 font-bold uppercase">PAKAIAN TERAKHIR:</span> {simulatedAlert.victim_info.last_clothing}</div>
-                <div><span className="text-rose-400 font-bold uppercase">KENDARAAN PENCULIK:</span> {simulatedAlert.incident_info.suspect_description}</div>
-              </div>
-
-              <div className="bg-rose-950/20 border border-rose-500/20 p-2.5 rounded text-[9px] leading-relaxed text-rose-350 italic">
-                "{simulatedAlert.ai_summary}"
+              <div className="text-[12px] space-y-2 text-zinc-350">
+                <div><span className="text-rose-500 font-extrabold uppercase text-[12px]">TERAKHIR DILIHAT:</span> {simulatedAlert.incident_info.last_seen_location}</div>
+                <div><span className="text-rose-500 font-extrabold uppercase text-[12px]">PAKAIAN TERAKHIR:</span> {simulatedAlert.victim_info.last_clothing}</div>
+                <div><span className="text-rose-500 font-extrabold uppercase text-[12px]">KENDARAAN PENCULIK:</span> {simulatedAlert.incident_info.suspect_description}</div>
               </div>
             </div>
           </div>
 
           {/* Thumb-Optimized Action Blocks */}
           <div className="w-full max-w-sm flex gap-4 mb-8">
+            <button
+              onClick={() => {
+                const secureLink = `https://lapang.polri.go.id/report/${simulatedAlert.secure_token_id}`;
+                navigator.clipboard.writeText(`DITEMUKAN ALERT LAPANG: ${simulatedAlert.ai_summary}\nLapor di: ${secureLink}`);
+                if (alertAudioRef.current) { alertAudioRef.current.pause(); alertAudioRef.current.currentTime = 0; alertAudioRef.current = null; }
+                setSimulatedIncomingAlert(false);
+                addDeviceLog("SUKSES: Teks & link disalin ke clipboard!");
+              }}
+              className="flex-1 py-3.5 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-slate-350 rounded-xl text-xs font-bold uppercase cursor-pointer transition-all flex items-center justify-center gap-1.5"
+            >
+              <Copy className="h-4 w-4" />
+              <span>SIMPAN</span>
+            </button>
             <button
               onClick={() => {
                 if (!isOnline) {
@@ -877,28 +926,17 @@ export default function SimulatorPage() {
                   });
                   localStorage.setItem("lapang_sdk_offline_queue", JSON.stringify(offlineQueue));
                   alert("Koneksi buruk. Laporan Anda telah diamankan di antrean lokal SDK dan akan otomatis diteruskan ke server POLRI saat sinyal pulih.");
+                  if (alertAudioRef.current) { alertAudioRef.current.pause(); alertAudioRef.current.currentTime = 0; alertAudioRef.current = null; }
                   setSimulatedIncomingAlert(false);
                   addDeviceLog("Koneksi buruk. Laporan masuk antrean lokal SDK.");
                 } else {
                   setShowReportModal(true);
                 }
               }}
-              className="flex-1 py-3.5 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-slate-350 rounded-xl text-xs font-bold uppercase cursor-pointer transition-all flex items-center justify-center gap-1.5 animate-pulse"
+              className="flex-1 py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold uppercase cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-[0_4px_20px_rgba(220,38,38,0.4)]"
             >
               <AlertTriangle className="h-4 w-4" />
-              <span>LAPOR PETUNJUK</span>
-            </button>
-            <button
-              onClick={() => {
-                const secureLink = `https://lapang.polri.go.id/report/${simulatedAlert.secure_token_id}`;
-                navigator.clipboard.writeText(`DITEMUKAN ALERT LAPANG: ${simulatedAlert.ai_summary}\nLapor di: ${secureLink}`);
-                setSimulatedIncomingAlert(false);
-                addDeviceLog("SUKSES: Teks & link disalin ke clipboard!");
-              }}
-              className="flex-1 py-3.5 bg-blue-600 border border-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold uppercase cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/30"
-            >
-              <Copy className="h-4 w-4" />
-              <span>SIMPAN & SALIN</span>
+              <span>LAPOR</span>
             </button>
           </div>
         </div>
