@@ -63,14 +63,17 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final Map<String, dynamic> data = message.data;
     final String tokenId = data['secure_token_id'] ?? data['victim_name'] ?? '';
     
-    // Strict duplication barrier
-    if (tokenId.isNotEmpty) {
-      if (await isCaseAlreadyProcessed(tokenId)) {
-        print("[LAPANG Background SDK] Abaikan Replay Kasus (Ghost Notification): $tokenId");
-        return;
-      }
-      await markCaseAsProcessed(tokenId);
+    if (tokenId.isEmpty) {
+      print("[LAPANG Background SDK] Abaikan payload kosong atau tidak valid.");
+      return;
     }
+    
+    // Strict duplication barrier
+    if (await isCaseAlreadyProcessed(tokenId)) {
+      print("[LAPANG Background SDK] Abaikan Replay Kasus (Ghost Notification): $tokenId");
+      return;
+    }
+    await markCaseAsProcessed(tokenId);
     
     // Strict Timestamp Validation Barrier: 10 seconds threshold
     if (data.containsKey('created_at')) {

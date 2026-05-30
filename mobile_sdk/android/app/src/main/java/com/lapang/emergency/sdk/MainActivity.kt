@@ -111,7 +111,7 @@ class MainActivity: FlutterActivity() {
                     "exitEmergencyMode" -> {
                         stopSiren()
                         clearLockscreenFlags()
-                        moveTaskToBack(true)
+                        finish()
                         overridePendingTransition(0, 0)
                         result.success(true)
                     }

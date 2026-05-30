@@ -557,7 +557,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'v0.5.0',
+                      'v1.0.0',
                       style: TextStyle(fontSize: 10, color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                     ),
                     const SizedBox(height: 10),
@@ -1306,7 +1306,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     ),
                     Expanded(
                       child: Text(
-                        'v0.5.0',
+                        'v1.0.0',
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFE2E8F0), fontFamily: 'monospace'),
                       ),
                     ),

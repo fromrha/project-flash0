@@ -6,8 +6,13 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
-## [v0.5.0] - 2026-05-30
+## [v1.0.0] - 2026-05-30
 ### Added
+- Embedded SDK Refactoring: removed permanent lockscreen flags from `AndroidManifest.xml` in favor of dynamic code-driven overrides.
+- Excluded alert overlay window from system task history using `FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS` in `EmergencyReceiver.kt`.
+- Terminated application completely via `finish()` on overlay dismiss to eliminate background processes.
+- Added strict empty payload validation in background FCM message handlers to eliminate ghost alerts.
+- Bumped client app and web dashboard version globally to `v1.0.0`.
 - Wrapped emergency overlay in `SafeArea` to prevent status/notification bar overlap and lower elements.
 - Added `overridePendingTransition(0, 0)` in Kotlin when exiting emergency mode to eliminate closing transition animations.
 - Dynamic Telemetry permission cards: GPS, Overlay, Lockscreen — all read real device state via MethodChannel
