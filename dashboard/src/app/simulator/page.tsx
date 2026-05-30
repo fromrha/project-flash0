@@ -632,25 +632,26 @@ export default function SimulatorPage() {
               <div className="flex-1 flex flex-col space-y-4 font-mono">
                 <div className="border-b border-zinc-800 pb-2">
                   <h2 className="text-sm font-bold text-cyan-400 font-mono uppercase">Tentang Proyek</h2>
-                  <p className="text-[8px] text-zinc-500 font-mono uppercase">Detail Submisi Resmi</p>
+                  <p className="text-[10px] text-zinc-500 font-mono uppercase">Detail Submisi Resmi</p>
                 </div>
 
-                <div className="bg-slate-950 border border-zinc-850 p-2.5 rounded-lg overflow-y-auto flex flex-col gap-3 max-h-[350px]">
-                  <img src="/banner.jpg" className="w-full h-auto object-cover rounded border border-zinc-800" alt="Google Juara Vibe Coding" />
+                <div className="overflow-y-auto flex flex-col gap-4 flex-1 pr-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <img src="/banner.jpg" className="w-full h-auto object-cover rounded border border-zinc-800/40" alt="Google Juara Vibe Coding" />
                   
-                  <div className="font-mono text-[9px] text-zinc-350 space-y-3 leading-relaxed">
+                  <div className="font-mono text-[13px] text-zinc-300 space-y-4 leading-relaxed">
                     <p>
-                      <span className="text-cyan-400 font-bold">LAPANG</span> adalah solusi kemanusiaan taktis yang dirancang untuk mempercepat koordinasi pencarian anak hilang menggunakan penyaringan geofencing berbasis koordinat GPS.
+                      <span className="text-cyan-400 font-bold">LAPANG</span> adalah solusi kemainan taktis yang dirancang untuk mempercepat koordinasi pencarian anak hilang menggunakan penyaringan geofencing berbasis koordinat GPS.
                     </p>
 
-                    <div className="space-y-1.5 border-t border-zinc-850 pt-2.5">
-                      <div className="text-cyan-400 font-bold text-[8px] uppercase">INFORMASI KREATOR & SUBMISI:</div>
-                      <div className="grid grid-cols-3 gap-y-1 text-[8px]">
-                        <span className="text-zinc-500">Kreator:</span>
-                        <span className="col-span-2 text-slate-200 font-bold">Rahmat</span>
+                    {/* Blok 1: Kreator Proyek */}
+                    <div className="space-y-2 border-t border-zinc-800/60 pt-3">
+                      <div className="text-cyan-400 font-bold text-xs uppercase tracking-wider">KREATOR PROYEK:</div>
+                      <div className="grid grid-cols-3 gap-y-1 text-xs">
+                        <span className="text-zinc-500">Nama:</span>
+                        <span className="col-span-2 text-slate-200 font-bold">Rahman Hanafi</span>
                         
                         <span className="text-zinc-500">Versi:</span>
-                        <span className="col-span-2 text-slate-200">v0.2.0</span>
+                        <span className="col-span-2 text-slate-200 font-bold">v0.3.0</span>
                         
                         <span className="text-zinc-500">Lisensi:</span>
                         <span className="col-span-2 text-slate-200">Apache License 2.0</span>
@@ -658,36 +659,42 @@ export default function SimulatorPage() {
                         <span className="text-zinc-500">Teknologi:</span>
                         <span className="col-span-2 text-slate-200">Flutter SDK, Next.js, Firebase FCM, Geolocator</span>
                       </div>
+                      
+                      <div className="flex flex-col gap-2 pt-2">
+                        <a 
+                          href="https://github.com/fromrha/project-flash0" 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="block text-center py-2 px-3 border border-cyan-800/30 hover:border-cyan-400 text-cyan-400 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all"
+                        >
+                          Repositori GitHub
+                        </a>
+                        <a 
+                          href="https://github.com/fromrha" 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="block text-center py-2 px-3 border border-zinc-800/60 hover:border-zinc-400 text-zinc-400 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all"
+                        >
+                          Portofolio GitHub
+                        </a>
+                      </div>
                     </div>
 
-                    <div className="space-y-1 border-t border-zinc-850 pt-2.5">
-                      <div className="text-cyan-400 font-bold text-[8px] uppercase">LINK REFERENSI:</div>
-                      <a 
-                        href="https://github.com/fromrha/project-flash0" 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="block text-cyan-400 hover:underline text-[8px] break-all"
+                    {/* Blok 2: Submisi Resmi Google */}
+                    <div className="space-y-2 border-t border-zinc-800/60 pt-3">
+                      <div className="text-cyan-400 font-bold text-xs uppercase tracking-wider">SUBMISI RESMI GOOGLE:</div>
+                      <p className="text-[12px] text-zinc-400 leading-relaxed">
+                        Proyek ini dikembangkan secara khusus sebagai submisi resmi untuk ajang kompetisi Google Juara Vibe Coding. Mengintegrasikan teknologi cloud, geofencing real-time, dan push notification berkecepatan tinggi.
+                      </p>
+                      <a
+                        href="https://rsvp.withgoogle.com/events/juaravibecoding"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-center py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white rounded font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
                       >
-                        • Repo: https://github.com/fromrha/project-flash0
-                      </a>
-                      <a 
-                        href="https://github.com/fromrha" 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="block text-cyan-400 hover:underline text-[8px] break-all"
-                      >
-                        • Profil: https://github.com/fromrha
+                        Kunjungi Google Vibe Coding
                       </a>
                     </div>
-
-                    <a
-                      href="https://rsvp.withgoogle.com/events/juaravibecoding"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-center py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white rounded font-bold text-[8px] uppercase tracking-wider transition-all mt-2 cursor-pointer"
-                    >
-                      Kunjungi Google Vibe Coding Event
-                    </a>
                   </div>
                 </div>
               </div>
@@ -799,9 +806,9 @@ export default function SimulatorPage() {
 
               {/* Drawer Footer */}
               <div className="p-4 border-t border-zinc-850 bg-slate-950/40 space-y-1 text-[8px] text-zinc-500 font-mono">
-                <div>REAL-TIME SERVER CLOCK:</div>
+                <div>WAKTU SERVER:</div>
                 <div className="text-zinc-350 font-bold mb-1.5">{currentTime || "00:00:00"}</div>
-                <div>CURRENT COORDINATES:</div>
+                <div>KOORDINAT SEKARANG:</div>
                 <div className="text-zinc-350 font-bold break-all">{latLngText}</div>
               </div>
             </div>
