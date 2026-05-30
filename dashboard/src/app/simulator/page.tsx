@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   ShieldAlert, 
+  Shield,
   Smartphone, 
   Wifi, 
   Bell, 
@@ -372,10 +373,10 @@ export default function SimulatorPage() {
           {/* SCREEN SCROLLABLE CONTENT */}
           <div className="flex-1 flex flex-col overflow-y-auto relative p-4 z-20">
             {activeTab === "home" && (
-              <div className="flex-1 flex flex-col relative h-full">
+              <div className="flex-1 flex flex-col justify-between h-full z-20">
                 
                 {/* Top Header Group */}
-                <div className="text-center pt-2 pb-4 flex flex-col items-center gap-2.5 z-20">
+                <div className="text-center pt-2 pb-4 flex flex-col items-center gap-2.5">
                   <div>
                     <h1 className="text-3xl font-extrabold font-mono text-slate-100 uppercase leading-none">LAPANG</h1>
                     <p className="text-xs font-mono text-cyan-400 uppercase mt-1.5 leading-none">Laporan Anak Hilang</p>
@@ -383,7 +384,7 @@ export default function SimulatorPage() {
                   
                   <div className={`text-[9px] font-mono py-1 px-3 rounded-full flex items-center gap-1.5 mx-auto border transition-all ${
                     locationState === "found" 
-                      ? "text-emerald-400 bg-emerald-950/20 border-emerald-800/40 shadow-[0_0_8px_rgba(52,211,153,0.1)]" 
+                      ? "text-emerald-400 bg-emerald-950/20 border-emerald-800/40 shadow-[0_0_8px_rgba(52,211,153,0.15)]" 
                       : locationState === "denied"
                       ? "text-rose-500 bg-rose-950/20 border-rose-800/40 animate-pulse"
                       : "text-zinc-500 bg-zinc-950 border-zinc-900/60"
@@ -393,9 +394,9 @@ export default function SimulatorPage() {
                   </div>
                 </div>
 
-                {/* Dead Mid-Center Logo Container */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <div className="relative pointer-events-auto flex items-center justify-center">
+                {/* Centered Logo Container */}
+                <div className="flex-1 flex items-center justify-center relative my-4">
+                  <div className="relative flex items-center justify-center">
                     {/* Pulsing glow ring */}
                     <div 
                       className="absolute rounded-full bg-cyan-500/10 border border-cyan-500/30"
@@ -422,7 +423,7 @@ export default function SimulatorPage() {
                 </div>
 
                 {/* Bottom Report Card */}
-                <div className="mt-auto z-20 flex flex-col gap-2">
+                <div className="flex flex-col gap-2 pt-2 pb-2">
                   <div className="text-[10px] font-bold text-cyan-400 tracking-wider text-left pl-2 font-mono uppercase">
                     PENGADUAN DARURAT
                   </div>
@@ -430,13 +431,18 @@ export default function SimulatorPage() {
                     {/* Subtle top indicator bar */}
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 to-cyan-400"></div>
                     
-                    <h3 className="text-sm font-extrabold text-slate-100 font-mono leading-relaxed max-w-[280px] mx-auto">
-                      Melihat indikasi atau percobaan penculikan anak?
-                    </h3>
+                    <div className="flex items-center gap-4 text-left">
+                      <span className="material-symbols-outlined text-[52px] leading-none text-white select-none flex-shrink-0">
+                        zone_person_urgent
+                      </span>
+                      <h3 className="text-sm font-extrabold text-slate-100 font-mono leading-relaxed">
+                        Melihat indikasi atau percobaan penculikan anak?
+                      </h3>
+                    </div>
 
                     <button
                       onClick={() => setShowReportModal(true)}
-                      className="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-mono font-bold text-xs cursor-pointer tracking-wider transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-[0.98]"
+                      className="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-mono font-bold text-xs cursor-pointer tracking-wider transition-all shadow-[0_4px_20px_rgba(220,38,38,0.4)] active:scale-[0.98]"
                     >
                       LAPOR SEGERA
                     </button>

@@ -52,6 +52,9 @@ export default function RootLayout({
       className={`${outfit.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=block" />
+      </head>
       <body className="min-h-full flex flex-col bg-tactical-dark text-slate-100 selection:bg-electric-alert selection:text-white">
         {children}
       </body>
