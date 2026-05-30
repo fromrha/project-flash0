@@ -112,6 +112,7 @@ class MainActivity: FlutterActivity() {
                         stopSiren()
                         clearLockscreenFlags()
                         moveTaskToBack(true)
+                        overridePendingTransition(0, 0)
                         result.success(true)
                     }
                     // --- NEW: Force lockscreen wake from Flutter side (for foreground alerts) ---

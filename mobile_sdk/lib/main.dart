@@ -557,7 +557,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'v0.3.0',
+                      'v0.5.0',
                       style: TextStyle(fontSize: 10, color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold, fontFamily: 'monospace'),
                     ),
                     const SizedBox(height: 10),
@@ -1306,7 +1306,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     ),
                     Expanded(
                       child: Text(
-                        'v0.3.0',
+                        'v0.5.0',
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFE2E8F0), fontFamily: 'monospace'),
                       ),
                     ),
@@ -1540,9 +1540,11 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       color: const Color(0xFF030712), // Deep tactical dark background
       width: double.infinity,
       height: double.infinity,
-      child: _showReportForm
-          ? _buildReportFormLayout(tokenId)
-          : _buildAlertDetailsLayout(victimName, victimAge, lastSeen, clothing, suspect, summary, tokenId, victimPhoto),
+      child: SafeArea(
+        child: _showReportForm
+            ? _buildReportFormLayout(tokenId)
+            : _buildAlertDetailsLayout(victimName, victimAge, lastSeen, clothing, suspect, summary, tokenId, victimPhoto),
+      ),
     );
   }
 

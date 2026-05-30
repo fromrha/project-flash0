@@ -5,7 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Versioning follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
+
+## [v0.5.0] - 2026-05-30
 ### Added
+- Wrapped emergency overlay in `SafeArea` to prevent status/notification bar overlap and lower elements.
+- Added `overridePendingTransition(0, 0)` in Kotlin when exiting emergency mode to eliminate closing transition animations.
 - Dynamic Telemetry permission cards: GPS, Overlay, Lockscreen — all read real device state via MethodChannel
 - Smart permission button in Telemetry tab: turns red and opens system settings if any permission is denied
 - `WidgetsBindingObserver` on DashboardScreen to refresh permission states when app resumes from background
@@ -16,6 +20,7 @@ Versioning follows [Semantic Versioning](https://semver.org/)
 - Looping alert audio in web simulator via `useRef<HTMLAudioElement>` — audio stops on dismiss
 
 ### Changed
+- Global version bump to `v0.5.0`.
 - Alert overlay icon reverted to layered ring design (outermost faint ring → middle ring → filled core circle with glow)
 - Removed "PERINGATAN DITERIMA: AREA RADIUS SIAGA 1" subtitle from overlay header
 - Age badge (`X TH`) font size increased from 10 to 14px with larger padding
